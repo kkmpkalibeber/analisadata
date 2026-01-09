@@ -1,0 +1,1951 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisis Nilai Siswa</title>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PapaParse for CSV -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3a0ca3;
+            --success-color: #4cc9f0;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fb;
+            padding-top: 20px;
+        }
+        
+        .card {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 12px 12px 0 0 !important;
+            font-weight: 600;
+        }
+        
+        .nav-tabs .nav-link {
+            font-weight: 500;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .data-table {
+            font-size: 0.9rem;
+        }
+        
+        .data-table th {
+            background-color: #f1f5fd;
+            font-weight: 600;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 300px;
+        }
+        
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .badge-custom {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        footer {
+            margin-top: 40px;
+            padding: 20px 0;
+            background-color: var(--dark-color);
+            color: white;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h1 class="display-5 fw-bold text-primary">
+                            <i class="fas fa-graduation-cap me-2"></i>Analisis Nilai Siswa
+                        </h1>
+                        <p class="lead">
+                            Analisis otomatis dari data Google Sheets - Monitoring & Evaluasi Performa Siswa
+                        </p>
+                        <div class="alert alert-info d-inline-block">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Data diambil otomatis dari: 
+                            <a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vRh4LhkQFacXW75S33t0NiaGm4rfPRuhcWJ8y4GPfuDrGNyNY1vD6EVWt3yYfCvOtNz80ywUJSIYriJ/pub?gid=0&single=true&output=csv" target="_blank">
+                                Google Sheets
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Control Panel -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Kontrol Analisis</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <button id="loadDataBtn" class="btn btn-primary w-100 mb-2">
+                                    <i class="fas fa-sync-alt me-2"></i>Muat Data
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button id="cleanDataBtn" class="btn btn-success w-100 mb-2">
+                                    <i class="fas fa-broom me-2"></i>Bersihkan Data
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button id="analyzeBtn" class="btn btn-warning w-100 mb-2">
+                                    <i class="fas fa-chart-bar me-2"></i>Analisis EDA
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="dropdown">
+                                    <button class="btn btn-secondary w-100 mb-2 dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown">
+                                        <i class="fas fa-download me-2"></i>Ekspor
+                                    </button>
+                                    <ul class="dropdown-menu w-100">
+                                        <li><a class="dropdown-item" href="#" id="exportPDF"><i class="fas fa-file-pdf me-2"></i>PDF Report</a></li>
+                                        <li><a class="dropdown-item" href="#" id="exportPNG"><i class="fas fa-image me-2"></i>Grafik (PNG)</a></li>
+                                        <li><a class="dropdown-item" href="#" id="exportCSV"><i class="fas fa-file-csv me-2"></i>Data (CSV)</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+                                    <label class="form-check-label" for="autoRefresh">Auto-refresh setiap 30 detik</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="darkMode">
+                                    <label class="form-check-label" for="darkMode">Mode Gelap</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stats Overview -->
+        <div class="row mb-4" id="statsSection" style="display: none;">
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalStudents">0</div>
+                    <div class="stat-label">Total Siswa</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card">
+                    <div class="stat-value" id="avgRaport">0</div>
+                    <div class="stat-label">Rata² Raport</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card">
+                    <div class="stat-value" id="avgTKA">0</div>
+                    <div class="stat-label">Rata² TKA</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalClasses">0</div>
+                    <div class="stat-label">Jumlah Kelas</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content Tabs -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" id="mainTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="data-tab" data-bs-toggle="tab" data-bs-target="#dataTab" type="button">
+                                    <i class="fas fa-table me-2"></i>Data
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="cleaning-tab" data-bs-toggle="tab" data-bs-target="#cleaningTab" type="button">
+                                    <i class="fas fa-broom me-2"></i>Data Cleaning
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#statsTab" type="button">
+                                    <i class="fas fa-chart-line me-2"></i>Analisis Statistik
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="visualization-tab" data-bs-toggle="tab" data-bs-target="#visualizationTab" type="button">
+                                    <i class="fas fa-chart-pie me-2"></i>Visualisasi
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="advanced-tab" data-bs-toggle="tab" data-bs-target="#advancedTab" type="button">
+                                    <i class="fas fa-cogs me-2"></i>Analisis Lanjutan
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="tab-content" id="mainTabContent">
+                            
+                            <!-- Tab 1: Data -->
+                            <div class="tab-pane fade show active" id="dataTab" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <h5><i class="fas fa-database me-2"></i>Data Mentah dari Google Sheets</h5>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped data-table" id="rawDataTable">
+                                                <thead>
+                                                    <tr>
+                                                        <th>No</th>
+                                                        <th>Nama Siswa</th>
+                                                        <th>Kelas</th>
+                                                        <th>Nilai Raport</th>
+                                                        <th>Nilai TKA</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="rawDataBody">
+                                                    <!-- Data akan diisi oleh JS -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tab 2: Data Cleaning -->
+                            <div class="tab-pane fade" id="cleaningTab" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card mb-4">
+                                            <div class="card-header bg-info text-white">
+                                                <h6 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Masalah Data</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <ul class="list-group list-group-flush" id="dataIssuesList">
+                                                    <!-- Data issues akan ditampilkan di sini -->
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="card">
+                                            <div class="card-header bg-success text-white">
+                                                <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Hasil Cleaning</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="cleaningResults">
+                                                    <p>Klik "Bersihkan Data" untuk memulai proses cleaning</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Metode Cleaning</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="removeDuplicates" checked>
+                                                    <label class="form-check-label" for="removeDuplicates">Hapus data duplikat</label>
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="fillMissing" checked>
+                                                    <label class="form-check-label" for="fillMissing">Isi nilai kosong (median per kelas)</label>
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="fixTypes" checked>
+                                                    <label class="form-check-label" for="fixTypes">Perbaiki tipe data</label>
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="normalizeNames" checked>
+                                                    <label class="form-check-label" for="normalizeNames">Normalisasi nama (Title Case)</label>
+                                                </div>
+                                                <div class="form-check mb-4">
+                                                    <input class="form-check-input" type="checkbox" id="detectOutliers" checked>
+                                                    <label class="form-check-label" for="detectOutliers">Deteksi outlier</label>
+                                                </div>
+                                                
+                                                <h6>Setelah Cleaning:</h6>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm data-table">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Nama Siswa</th>
+                                                                <th>Kelas</th>
+                                                                <th>Nilai Raport</th>
+                                                                <th>Nilai TKA</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="cleanedDataBody">
+                                                            <!-- Data bersih akan ditampilkan di sini -->
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tab 3: Analisis Statistik -->
+                            <div class="tab-pane fade" id="statsTab" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card mb-4">
+                                            <div class="card-header">
+                                                <h6 class="mb-0"><i class="fas fa-calculator me-2"></i>Statistik Deskriptif</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-striped" id="statsTable">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Metrik</th>
+                                                                <th>Nilai Raport</th>
+                                                                <th>Nilai TKA</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <!-- Statistik akan diisi oleh JS -->
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0"><i class="fas fa-project-diagram me-2"></i>Korelasi</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="chart-container">
+                                                    <canvas id="correlationChart"></canvas>
+                                                </div>
+                                                <p id="correlationText" class="text-center mt-2">Korelasi akan dihitung setelah analisis</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Distribusi Nilai</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="chart-container">
+                                                    <canvas id="distributionChart"></canvas>
+                                                </div>
+                                                <div class="mt-3">
+                                                    <h6>Outlier Detection:</h6>
+                                                    <div id="outlierInfo">
+                                                        <!-- Informasi outlier akan ditampilkan di sini -->
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tab 4: Visualisasi -->
+                            <div class="tab-pane fade" id="visualizationTab" role="tabpanel">
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-outline-primary active" data-chart-type="bar">
+                                                <i class="fas fa-chart-bar me-1"></i>Bar Chart
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary" data-chart-type="line">
+                                                <i class="fas fa-chart-line me-1"></i>Line Chart
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary" data-chart-type="scatter">
+                                                <i class="fas fa-chart-scatter me-1"></i>Scatter Plot
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary" data-chart-type="pie">
+                                                <i class="fas fa-chart-pie me-1"></i>Pie Chart
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary" data-chart-type="heatmap">
+                                                <i class="fas fa-th me-1"></i>Heatmap
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0" id="chartTitle">Perbandingan Nilai per Kelas</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="chart-container" style="height: 400px;">
+                                                    <canvas id="mainChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Kontrol Grafik</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Data yang ditampilkan:</label>
+                                                    <select class="form-select" id="chartDataSelect">
+                                                        <option value="raport">Nilai Raport</option>
+                                                        <option value="tka">Nilai TKA</option>
+                                                        <option value="both">Kedua Nilai</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label">Pengelompokan:</label>
+                                                    <select class="form-select" id="chartGroupSelect">
+                                                        <option value="kelas">Per Kelas</option>
+                                                        <option value="siswa">Per Siswa</option>
+                                                        <option value="range">Range Nilai</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label">Warna Tema:</label>
+                                                    <select class="form-select" id="chartThemeSelect">
+                                                        <option value="default">Default</option>
+                                                        <option value="vibrant">Vibrant</option>
+                                                        <option value="pastel">Pastel</option>
+                                                        <option value="mono">Monokrom</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <button class="btn btn-outline-primary w-100 mb-2" id="exportChartBtn">
+                                                    <i class="fas fa-download me-2"></i>Ekspor Gambar
+                                                </button>
+                                                
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="chartInteractivity" checked>
+                                                    <label class="form-check-label" for="chartInteractivity">Interaktif (zoom/hover)</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tab 5: Analisis Lanjutan -->
+                            <div class="tab-pane fade" id="advancedTab" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card mb-4">
+                                            <div class="card-header">
+                                                <h6 class="mb-0"><i class="fas fa-table me-2"></i>Pivot Table</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Baris:</label>
+                                                    <select class="form-select" id="pivotRows">
+                                                        <option value="kelas">Kelas</option>
+                                                        <option value="nama_siswa">Nama Siswa</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label">Nilai yang diagregasi:</label>
+                                                    <select class="form-select" id="pivotValues">
+                                                        <option value="nilai_raport">Nilai Raport</option>
+                                                        <option value="nilai_TKA">Nilai TKA</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label">Fungsi Agregasi:</label>
+                                                    <select class="form-select" id="pivotAgg">
+                                                        <option value="mean">Rata-rata</option>
+                                                        <option value="sum">Total</option>
+                                                        <option value="count">Jumlah</option>
+                                                        <option value="min">Minimum</option>
+                                                        <option value="max">Maksimum</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <button class="btn btn-primary" id="generatePivotBtn">Buat Pivot Table</button>
+                                                
+                                                <div class="table-responsive mt-3">
+                                                    <table class="table table-sm" id="pivotTable">
+                                                        <!-- Pivot table akan diisi di sini -->
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0"><i class="fas fa-chart-area me-2"></i>Analisis Time Series</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <p class="text-muted">*Simulasi data time series dari nilai siswa</p>
+                                                <div class="chart-container">
+                                                    <canvas id="timeSeriesChart"></canvas>
+                                                </div>
+                                                
+                                                <div class="mt-4">
+                                                    <h6>GroupBy Analysis:</h6>
+                                                    <div id="groupByResults">
+                                                        <!-- Hasil groupby akan ditampilkan di sini -->
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer>
+            <div class="container">
+                <p class="mb-2">Aplikasi Analisis Nilai Siswa &copy; 2023</p>
+                <p class="small">Data diambil otomatis dari Google Sheets - Analisis realtime dengan JavaScript</p>
+                <p class="small">
+                    <i class="fas fa-sync-alt me-1"></i>Terakhir diperbarui: 
+                    <span id="lastUpdate">-</span>
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Main Application Script -->
+    <script>
+        // Konfigurasi
+        const DATA_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRh4LhkQFacXW75S33t0NiaGm4rfPRuhcWJ8y4GPfuDrGNyNY1vD6EVWt3yYfCvOtNz80ywUJSIYriJ/pub?gid=0&single=true&output=csv";
+        
+        // State aplikasi
+        let rawData = [];
+        let cleanedData = [];
+        let currentChart = null;
+        let autoRefreshInterval = null;
+        
+        // Warna untuk chart
+        const chartColors = {
+            default: ['#4361ee', '#3a0ca3', '#4cc9f0', '#7209b7', '#f72585', '#4895ef'],
+            vibrant: ['#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2', '#EF476F'],
+            pastel: ['#FFB6C1', '#87CEEB', '#98FB98', '#DDA0DD', '#FFD700', '#F0E68C'],
+            mono: ['#6c757d', '#adb5bd', '#ced4da', '#dee2e6', '#e9ecef', '#f8f9fa']
+        };
+        
+        // ==================== FUNGSI UTAMA ====================
+        
+        // 1. Load data dari Google Sheets
+        async function loadData() {
+            showLoading(true);
+            
+            try {
+                // Gunakan PapaParse untuk load CSV
+                const response = await fetch(DATA_URL);
+                const csvText = await response.text();
+                
+                Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        rawData = results.data;
+                        
+                        // Normalisasi nama kolom
+                        rawData = rawData.map(row => {
+                            const normalizedRow = {};
+                            for (const key in row) {
+                                const normalizedKey = key.toLowerCase().replace(/\s+/g, '_');
+                                normalizedRow[normalizedKey] = row[key];
+                            }
+                            return normalizedRow;
+                        });
+                        
+                        console.log("Data loaded:", rawData);
+                        displayRawData();
+                        updateStats();
+                        showLoading(false);
+                        
+                        // Tampilkan notifikasi
+                        showToast('success', 'Data berhasil dimuat!', `Loaded ${rawData.length} records`);
+                        
+                        // Update timestamp
+                        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+                    },
+                    error: function(error) {
+                        console.error("Error loading data:", error);
+                        showToast('error', 'Gagal memuat data!', error.message);
+                        showLoading(false);
+                    }
+                });
+            } catch (error) {
+                console.error("Fetch error:", error);
+                showToast('error', 'Gagal mengambil data!', error.message);
+                showLoading(false);
+            }
+        }
+        
+        // 2. Tampilkan data mentah
+        function displayRawData() {
+            const tbody = document.getElementById('rawDataBody');
+            tbody.innerHTML = '';
+            
+            if (!rawData || rawData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Tidak ada data</td></tr>';
+                return;
+            }
+            
+            rawData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                
+                // Cek nilai yang kosong
+                const raportVal = row.nilai_raport || row.nilai_raport === 0 ? parseFloat(row.nilai_raport) : null;
+                const tkaVal = row.nilai_tka || row.nilai_TKA || row.nilai_tka === 0 || row.nilai_TKA === 0 
+                    ? parseFloat(row.nilai_tka || row.nilai_TKA) 
+                    : null;
+                
+                let status = '<span class="badge bg-success">OK</span>';
+                
+                if (raportVal === null || tkaVal === null || isNaN(raportVal) || isNaN(tkaVal)) {
+                    status = '<span class="badge bg-warning">Missing</span>';
+                } else if (raportVal < 0 || raportVal > 100 || tkaVal < 0 || tkaVal > 100) {
+                    status = '<span class="badge bg-danger">Invalid</span>';
+                }
+                
+                tr.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${row.nama_siswa || '-'}</td>
+                    <td><span class="badge bg-primary">${row.kelas || '-'}</span></td>
+                    <td>${raportVal !== null && !isNaN(raportVal) ? raportVal.toFixed(1) : '-'}</td>
+                    <td>${tkaVal !== null && !isNaN(tkaVal) ? tkaVal.toFixed(1) : '-'}</td>
+                    <td>${status}</td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+        }
+        
+        // 3. Fungsi cleaning data
+        function cleanData() {
+            if (!rawData || rawData.length === 0) {
+                showToast('warning', 'Tidak ada data untuk dibersihkan!', 'Load data terlebih dahulu');
+                return;
+            }
+            
+            showLoading(true);
+            
+            // Salin data mentah
+            cleanedData = JSON.parse(JSON.stringify(rawData));
+            
+            // Hasil cleaning
+            const cleaningResults = {
+                duplicatesRemoved: 0,
+                missingFilled: 0,
+                outliersDetected: 0,
+                namesNormalized: 0
+            };
+            
+            // A. Hapus duplikat (jika dicentang)
+            if (document.getElementById('removeDuplicates').checked) {
+                const uniqueMap = new Map();
+                const initialCount = cleanedData.length;
+                
+                cleanedData = cleanedData.filter(row => {
+                    const key = `${row.nama_siswa}_${row.kelas}`;
+                    if (uniqueMap.has(key)) {
+                        return false;
+                    }
+                    uniqueMap.set(key, true);
+                    return true;
+                });
+                
+                cleaningResults.duplicatesRemoved = initialCount - cleanedData.length;
+            }
+            
+            // B. Normalisasi nama (Title Case)
+            if (document.getElementById('normalizeNames').checked) {
+                cleanedData.forEach(row => {
+                    if (row.nama_siswa) {
+                        const originalName = row.nama_siswa;
+                        row.nama_siswa = row.nama_siswa
+                            .split(' ')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join(' ');
+                        
+                        if (originalName !== row.nama_siswa) {
+                            cleaningResults.namesNormalized++;
+                        }
+                    }
+                });
+            }
+            
+            // C. Konversi tipe data
+            if (document.getElementById('fixTypes').checked) {
+                cleanedData.forEach(row => {
+                    // Konversi nilai numerik
+                    if (row.nilai_raport) {
+                        const val = parseFloat(row.nilai_raport);
+                        row.nilai_raport = isNaN(val) ? null : val;
+                    }
+                    
+                    if (row.nilai_tka) {
+                        const val = parseFloat(row.nilai_tka);
+                        row.nilai_tka = isNaN(val) ? null : val;
+                    } else if (row.nilai_TKA) {
+                        const val = parseFloat(row.nilai_TKA);
+                        row.nilai_tka = isNaN(val) ? null : val;
+                        delete row.nilai_TKA;
+                    }
+                    
+                    // Pastikan kelas string
+                    if (row.kelas) {
+                        row.kelas = String(row.kelas).toUpperCase();
+                    }
+                });
+            }
+            
+            // D. Handle missing values
+            if (document.getElementById('fillMissing').checked) {
+                // Hitung median per kelas untuk nilai raport
+                const kelasMap = {};
+                
+                // Kelompokkan data per kelas
+                cleanedData.forEach(row => {
+                    if (!row.kelas) return;
+                    
+                    if (!kelasMap[row.kelas]) {
+                        kelasMap[row.kelas] = {
+                            raportValues: [],
+                            tkaValues: []
+                        };
+                    }
+                    
+                    if (row.nilai_raport !== null && !isNaN(row.nilai_raport)) {
+                        kelasMap[row.kelas].raportValues.push(row.nilai_raport);
+                    }
+                    
+                    if (row.nilai_tka !== null && !isNaN(row.nilai_tka)) {
+                        kelasMap[row.kelas].tkaValues.push(row.nilai_tka);
+                    }
+                });
+                
+                // Hitung median per kelas
+                for (const kelas in kelasMap) {
+                    kelasMap[kelas].raportMedian = calculateMedian(kelasMap[kelas].raportValues);
+                    kelasMap[kelas].tkaMedian = calculateMedian(kelasMap[kelas].tkaValues);
+                }
+                
+                // Isi nilai yang kosong
+                cleanedData.forEach(row => {
+                    if ((row.nilai_raport === null || isNaN(row.nilai_raport)) && row.kelas && kelasMap[row.kelas]) {
+                        row.nilai_raport = kelasMap[row.kelas].raportMedian || 70;
+                        cleaningResults.missingFilled++;
+                    }
+                    
+                    if ((row.nilai_tka === null || isNaN(row.nilai_tka)) && row.kelas && kelasMap[row.kelas]) {
+                        row.nilai_tka = kelasMap[row.kelas].tkaMedian || 70;
+                        cleaningResults.missingFilled++;
+                    }
+                });
+            }
+            
+            // E. Deteksi outlier
+            if (document.getElementById('detectOutliers').checked) {
+                const raportValues = cleanedData
+                    .map(row => row.nilai_raport)
+                    .filter(val => val !== null && !isNaN(val));
+                
+                const tkaValues = cleanedData
+                    .map(row => row.nilai_tka)
+                    .filter(val => val !== null && !isNaN(val));
+                
+                const raportStats = calculateStats(raportValues);
+                const tkaStats = calculateStats(tkaValues);
+                
+                // Deteksi outlier menggunakan IQR method
+                cleanedData.forEach(row => {
+                    if (row.nilai_raport !== null && !isNaN(row.nilai_raport)) {
+                        const raportQ1 = raportStats.q1;
+                        const raportQ3 = raportStats.q3;
+                        const raportIQR = raportQ3 - raportQ1;
+                        const lowerBound = raportQ1 - 1.5 * raportIQR;
+                        const upperBound = raportQ3 + 1.5 * raportIQR;
+                        
+                        if (row.nilai_raport < lowerBound || row.nilai_raport > upperBound) {
+                            row.isOutlier = true;
+                            cleaningResults.outliersDetected++;
+                        }
+                    }
+                });
+            }
+            
+            // Tampilkan hasil cleaning
+            displayCleaningResults(cleaningResults);
+            displayCleanedData();
+            
+            // Update statistik
+            updateStats();
+            
+            // Generate analisis
+            performEDA();
+            
+            showLoading(false);
+            showToast('success', 'Data cleaning selesai!', 
+                `${cleaningResults.duplicatesRemoved} duplikat dihapus, ${cleaningResults.missingFilled} nilai diisi`);
+        }
+        
+        // 4. Tampilkan hasil cleaning
+        function displayCleaningResults(results) {
+            const issuesList = document.getElementById('dataIssuesList');
+            const resultsDiv = document.getElementById('cleaningResults');
+            
+            issuesList.innerHTML = '';
+            resultsDiv.innerHTML = '';
+            
+            // Tampilkan isu data
+            const issues = [
+                { text: `Data duplikat: ${results.duplicatesRemoved} ditemukan`, type: 'warning' },
+                { text: `Nilai kosong: ${results.missingFilled} diisi`, type: 'info' },
+                { text: `Nama dinormalisasi: ${results.namesNormalized}`, type: 'success' },
+                { text: `Outlier terdeteksi: ${results.outliersDetected}`, type: 'danger' }
+            ];
+            
+            issues.forEach(issue => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.innerHTML = `
+                    ${issue.text}
+                    <span class="badge bg-${issue.type}">${issue.type.toUpperCase()}</span>
+                `;
+                issuesList.appendChild(li);
+            });
+            
+            // Tampilkan ringkasan hasil
+            resultsDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-check-circle me-2"></i>Data Berhasil Dibersihkan!</h6>
+                    <ul class="mb-0">
+                        <li>Total data setelah cleaning: <strong>${cleanedData.length}</strong> records</li>
+                        <li>Data siap untuk dianalisis</li>
+                        <li>Klik tab "Analisis Statistik" untuk melihat hasil</li>
+                    </ul>
+                </div>
+            `;
+        }
+        
+        // 5. Tampilkan data yang sudah dibersihkan
+        function displayCleanedData() {
+            const tbody = document.getElementById('cleanedDataBody');
+            tbody.innerHTML = '';
+            
+            if (!cleanedData || cleanedData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data</td></tr>';
+                return;
+            }
+            
+            // Tampilkan maksimal 10 baris
+            const displayData = cleanedData.slice(0, 10);
+            
+            displayData.forEach(row => {
+                const tr = document.createElement('tr');
+                
+                // Highlight outlier
+                const outlierClass = row.isOutlier ? 'table-warning' : '';
+                
+                tr.innerHTML = `
+                    <td class="${outlierClass}">${row.nama_siswa || '-'}</td>
+                    <td><span class="badge bg-primary">${row.kelas || '-'}</span></td>
+                    <td class="${outlierClass}">${row.nilai_raport !== null && !isNaN(row.nilai_raport) ? row.nilai_raport.toFixed(1) : '-'}</td>
+                    <td class="${outlierClass}">${row.nilai_tka !== null && !isNaN(row.nilai_tka) ? row.nilai_tka.toFixed(1) : '-'}</td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+            
+            if (cleanedData.length > 10) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="4" class="text-center text-muted">... dan ${cleanedData.length - 10} baris lainnya</td>`;
+                tbody.appendChild(tr);
+            }
+        }
+        
+        // 6. Exploratory Data Analysis (EDA)
+        function performEDA() {
+            if (!cleanedData || cleanedData.length === 0) {
+                showToast('warning', 'Data belum dibersihkan!', 'Lakukan data cleaning terlebih dahulu');
+                return;
+            }
+            
+            // Hitung statistik
+            const raportValues = cleanedData
+                .map(row => row.nilai_raport)
+                .filter(val => val !== null && !isNaN(val));
+            
+            const tkaValues = cleanedData
+                .map(row => row.nilai_tka)
+                .filter(val => val !== null && !isNaN(val));
+            
+            const raportStats = calculateStats(raportValues);
+            const tkaStats = calculateStats(tkaValues);
+            
+            // Tampilkan statistik deskriptif
+            displayDescriptiveStats(raportStats, tkaStats);
+            
+            // Buat chart distribusi
+            createDistributionChart(raportValues, tkaValues);
+            
+            // Buat korelasi chart
+            createCorrelationChart(raportValues, tkaValues);
+            
+            // Tampilkan info outlier
+            displayOutlierInfo();
+            
+            // Buat chart utama
+            createMainChart();
+            
+            // Buat time series chart (simulasi)
+            createTimeSeriesChart();
+        }
+        
+        // 7. Tampilkan statistik deskriptif
+        function displayDescriptiveStats(raportStats, tkaStats) {
+            const tbody = document.getElementById('statsTable').querySelector('tbody');
+            tbody.innerHTML = '';
+            
+            const metrics = [
+                { name: 'Rata-rata', raport: raportStats.mean, tka: tkaStats.mean },
+                { name: 'Median', raport: raportStats.median, tka: tkaStats.median },
+                { name: 'Mode', raport: raportStats.mode, tka: tkaStats.mode },
+                { name: 'Std Dev', raport: raportStats.stdDev, tka: tkaStats.stdDev },
+                { name: 'Min', raport: raportStats.min, tka: tkaStats.min },
+                { name: 'Max', raport: raportStats.max, tka: tkaStats.max },
+                { name: 'Q1', raport: raportStats.q1, tka: tkaStats.q1 },
+                { name: 'Q3', raport: raportStats.q3, tka: tkaStats.q3 },
+                { name: 'Range', raport: raportStats.max - raportStats.min, tka: tkaStats.max - tkaStats.min }
+            ];
+            
+            metrics.forEach(metric => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${metric.name}</strong></td>
+                    <td>${typeof metric.raport === 'number' ? metric.raport.toFixed(2) : metric.raport}</td>
+                    <td>${typeof metric.tka === 'number' ? metric.tka.toFixed(2) : metric.tka}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Hitung korelasi
+            const correlation = calculateCorrelation(raportValues, tkaValues);
+            document.getElementById('correlationText').innerHTML = `
+                <strong>Koefisien Korelasi:</strong> ${correlation.toFixed(3)}<br>
+                ${getCorrelationInterpretation(correlation)}
+            `;
+        }
+        
+        // 8. Buat chart distribusi
+        function createDistributionChart(raportValues, tkaValues) {
+            const ctx = document.getElementById('distributionChart').getContext('2d');
+            
+            // Hancurkan chart sebelumnya jika ada
+            if (window.distributionChart) {
+                window.distributionChart.destroy();
+            }
+            
+            // Buat bins untuk histogram
+            const createBins = (data, binCount = 10) => {
+                const min = Math.min(...data);
+                const max = Math.max(...data);
+                const binWidth = (max - min) / binCount;
+                const bins = Array(binCount).fill(0);
+                
+                data.forEach(value => {
+                    const binIndex = Math.min(Math.floor((value - min) / binWidth), binCount - 1);
+                    bins[binIndex]++;
+                });
+                
+                const labels = [];
+                for (let i = 0; i < binCount; i++) {
+                    const binStart = min + i * binWidth;
+                    const binEnd = binStart + binWidth;
+                    labels.push(`${binStart.toFixed(0)}-${binEnd.toFixed(0)}`);
+                }
+                
+                return { labels, bins };
+            };
+            
+            const raportBins = createBins(raportValues);
+            const tkaBins = createBins(tkaValues);
+            
+            window.distributionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: raportBins.labels,
+                    datasets: [
+                        {
+                            label: 'Nilai Raport',
+                            data: raportBins.bins,
+                            backgroundColor: 'rgba(67, 97, 238, 0.7)',
+                            borderColor: 'rgba(67, 97, 238, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Nilai TKA',
+                            data: tkaBins.bins,
+                            backgroundColor: 'rgba(76, 201, 240, 0.7)',
+                            borderColor: 'rgba(76, 201, 240, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Distribusi Nilai Siswa'
+                        },
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Frekuensi'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Range Nilai'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 9. Buat chart korelasi
+        function createCorrelationChart(raportValues, tkaValues) {
+            const ctx = document.getElementById('correlationChart').getContext('2d');
+            
+            // Hancurkan chart sebelumnya jika ada
+            if (window.correlationChart) {
+                window.correlationChart.destroy();
+            }
+            
+            // Data untuk scatter plot
+            const scatterData = [];
+            for (let i = 0; i < Math.min(raportValues.length, tkaValues.length); i++) {
+                scatterData.push({ x: raportValues[i], y: tkaValues[i] });
+            }
+            
+            window.correlationChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Nilai Raport vs TKA',
+                        data: scatterData,
+                        backgroundColor: 'rgba(67, 97, 238, 0.7)',
+                        borderColor: 'rgba(67, 97, 238, 1)',
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Korelasi Nilai Raport dan TKA'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Raport: ${context.parsed.x.toFixed(1)}, TKA: ${context.parsed.y.toFixed(1)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Nilai Raport'
+                            },
+                            min: 0,
+                            max: 100
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Nilai TKA'
+                            },
+                            min: 0,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 10. Tampilkan info outlier
+        function displayOutlierInfo() {
+            const outlierInfo = document.getElementById('outlierInfo');
+            
+            if (!cleanedData || cleanedData.length === 0) {
+                outlierInfo.innerHTML = '<p class="text-muted">Data belum dianalisis</p>';
+                return;
+            }
+            
+            const outliers = cleanedData.filter(row => row.isOutlier);
+            
+            if (outliers.length === 0) {
+                outlierInfo.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>Tidak ditemukan outlier yang signifikan
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>${outliers.length} outlier terdeteksi!</strong>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Nama Siswa</th>
+                                <th>Kelas</th>
+                                <th>Nilai Raport</th>
+                                <th>Nilai TKA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            outliers.slice(0, 5).forEach(row => {
+                html += `
+                    <tr>
+                        <td>${row.nama_siswa}</td>
+                        <td><span class="badge bg-primary">${row.kelas}</span></td>
+                        <td>${row.nilai_raport.toFixed(1)}</td>
+                        <td>${row.nilai_tka.toFixed(1)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            if (outliers.length > 5) {
+                html += `<p class="text-muted">... dan ${outliers.length - 5} outlier lainnya</p>`;
+            }
+            
+            outlierInfo.innerHTML = html;
+        }
+        
+        // 11. Buat chart utama (interaktif)
+        function createMainChart(type = 'bar') {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            
+            // Hancurkan chart sebelumnya jika ada
+            if (currentChart) {
+                currentChart.destroy();
+            }
+            
+            if (!cleanedData || cleanedData.length === 0) {
+                ctx.font = '16px Arial';
+                ctx.fillText('Data belum tersedia untuk visualisasi', 50, 100);
+                return;
+            }
+            
+            // Persiapkan data berdasarkan pilihan
+            const dataType = document.getElementById('chartDataSelect').value;
+            const groupBy = document.getElementById('chartGroupSelect').value;
+            const theme = document.getElementById('chartThemeSelect').value;
+            
+            let labels = [];
+            let datasets = [];
+            
+            // Data per kelas
+            if (groupBy === 'kelas') {
+                const kelasMap = {};
+                
+                cleanedData.forEach(row => {
+                    if (!row.kelas) return;
+                    
+                    if (!kelasMap[row.kelas]) {
+                        kelasMap[row.kelas] = {
+                            raportValues: [],
+                            tkaValues: []
+                        };
+                    }
+                    
+                    if (row.nilai_raport !== null && !isNaN(row.nilai_raport)) {
+                        kelasMap[row.kelas].raportValues.push(row.nilai_raport);
+                    }
+                    
+                    if (row.nilai_tka !== null && !isNaN(row.nilai_tka)) {
+                        kelasMap[row.kelas].tkaValues.push(row.nilai_tka);
+                    }
+                });
+                
+                labels = Object.keys(kelasMap).sort();
+                
+                if (dataType === 'raport' || dataType === 'both') {
+                    datasets.push({
+                        label: 'Rata-rata Raport',
+                        data: labels.map(kelas => {
+                            const values = kelasMap[kelas].raportValues;
+                            return values.length > 0 ? values.reduce((a, b) => a + b) / values.length : 0;
+                        }),
+                        backgroundColor: chartColors[theme][0],
+                        borderColor: chartColors[theme][0],
+                        borderWidth: 1
+                    });
+                }
+                
+                if (dataType === 'tka' || dataType === 'both') {
+                    datasets.push({
+                        label: 'Rata-rata TKA',
+                        data: labels.map(kelas => {
+                            const values = kelasMap[kelas].tkaValues;
+                            return values.length > 0 ? values.reduce((a, b) => a + b) / values.length : 0;
+                        }),
+                        backgroundColor: chartColors[theme][1],
+                        borderColor: chartColors[theme][1],
+                        borderWidth: 1
+                    });
+                }
+                
+                document.getElementById('chartTitle').textContent = 'Perbandingan Nilai per Kelas';
+            }
+            
+            // Data per siswa (top 10)
+            else if (groupBy === 'siswa') {
+                const sortedData = [...cleanedData]
+                    .sort((a, b) => {
+                        const aAvg = ((a.nilai_raport || 0) + (a.nilai_tka || 0)) / 2;
+                        const bAvg = ((b.nilai_raport || 0) + (b.nilai_tka || 0)) / 2;
+                        return bAvg - aAvg;
+                    })
+                    .slice(0, 10);
+                
+                labels = sortedData.map(row => row.nama_siswa.substring(0, 15) + (row.nama_siswa.length > 15 ? '...' : ''));
+                
+                if (dataType === 'raport' || dataType === 'both') {
+                    datasets.push({
+                        label: 'Nilai Raport',
+                        data: sortedData.map(row => row.nilai_raport || 0),
+                        backgroundColor: chartColors[theme][0],
+                        borderColor: chartColors[theme][0],
+                        borderWidth: 1
+                    });
+                }
+                
+                if (dataType === 'tka' || dataType === 'both') {
+                    datasets.push({
+                        label: 'Nilai TKA',
+                        data: sortedData.map(row => row.nilai_tka || 0),
+                        backgroundColor: chartColors[theme][1],
+                        borderColor: chartColors[theme][1],
+                        borderWidth: 1
+                    });
+                }
+                
+                document.getElementById('chartTitle').textContent = '10 Siswa dengan Nilai Tertinggi';
+            }
+            
+            // Konfigurasi chart
+            const chartConfig = {
+                type: type,
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: document.getElementById('chartTitle').textContent,
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            position: 'top'
+                        },
+                        tooltip: {
+                            enabled: document.getElementById('chartInteractivity').checked,
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Nilai'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: groupBy === 'kelas' ? 'Kelas' : 'Siswa'
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            };
+            
+            // Tambahkan opsi khusus per tipe chart
+            if (type === 'line') {
+                chartConfig.options.elements = {
+                    line: {
+                        tension: 0.3
+                    }
+                };
+            } else if (type === 'pie') {
+                chartConfig.options.plugins.tooltip = {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                };
+            }
+            
+            // Buat chart
+            currentChart = new Chart(ctx, chartConfig);
+        }
+        
+        // 12. Buat time series chart (simulasi)
+        function createTimeSeriesChart() {
+            const ctx = document.getElementById('timeSeriesChart').getContext('2d');
+            
+            // Hancurkan chart sebelumnya jika ada
+            if (window.timeSeriesChart) {
+                window.timeSeriesChart.destroy();
+            }
+            
+            // Generate data simulasi time series
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            
+            // Data simulasi: rata-rata nilai per bulan
+            const raportTrend = [];
+            const tkaTrend = [];
+            let baseRaport = 75;
+            let baseTKA = 70;
+            
+            for (let i = 0; i < 12; i++) {
+                // Fluktuasi acak
+                const raportVariation = Math.random() * 10 - 5;
+                const tkaVariation = Math.random() * 10 - 5;
+                
+                // Tren naik sedikit
+                const trend = i * 0.5;
+                
+                raportTrend.push(baseRaport + raportVariation + trend);
+                tkaTrend.push(baseTKA + tkaVariation + trend);
+            }
+            
+            window.timeSeriesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Nilai Raport (simulasi)',
+                            data: raportTrend,
+                            borderColor: 'rgba(67, 97, 238, 1)',
+                            backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Nilai TKA (simulasi)',
+                            data: tkaTrend,
+                            borderColor: 'rgba(76, 201, 240, 1)',
+                            backgroundColor: 'rgba(76, 201, 240, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Tren Nilai per Bulan (Simulasi)'
+                        },
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 60,
+                            max: 90,
+                            title: {
+                                display: true,
+                                text: 'Nilai Rata-rata'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Bulan'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 13. Update statistik ringkasan
+        function updateStats() {
+            const data = cleanedData.length > 0 ? cleanedData : rawData;
+            
+            if (!data || data.length === 0) {
+                document.getElementById('statsSection').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('statsSection').style.display = 'flex';
+            
+            // Hitung statistik
+            const totalStudents = data.length;
+            
+            const raportValues = data
+                .map(row => parseFloat(row.nilai_raport) || parseFloat(row.nilai_raport) === 0 ? parseFloat(row.nilai_raport) : null)
+                .filter(val => val !== null && !isNaN(val));
+            
+            const tkaValues = data
+                .map(row => parseFloat(row.nilai_tka) || parseFloat(row.nilai_TKA) || 
+                           parseFloat(row.nilai_tka) === 0 || parseFloat(row.nilai_TKA) === 0 ? 
+                           parseFloat(row.nilai_tka || row.nilai_TKA) : null)
+                .filter(val => val !== null && !isNaN(val));
+            
+            // Hitung rata-rata
+            const avgRaport = raportValues.length > 0 ? 
+                raportValues.reduce((a, b) => a + b, 0) / raportValues.length : 0;
+            
+            const avgTKA = tkaValues.length > 0 ? 
+                tkaValues.reduce((a, b) => a + b, 0) / tkaValues.length : 0;
+            
+            // Hitung jumlah kelas unik
+            const uniqueClasses = [...new Set(data.map(row => row.kelas).filter(Boolean))];
+            
+            // Update UI
+            document.getElementById('totalStudents').textContent = totalStudents;
+            document.getElementById('avgRaport').textContent = avgRaport.toFixed(1);
+            document.getElementById('avgTKA').textContent = avgTKA.toFixed(1);
+            document.getElementById('totalClasses').textContent = uniqueClasses.length;
+        }
+        
+        // 14. Generate pivot table
+        function generatePivotTable() {
+            if (!cleanedData || cleanedData.length === 0) {
+                showToast('warning', 'Data belum tersedia!', 'Load dan clean data terlebih dahulu');
+                return;
+            }
+            
+            const rows = document.getElementById('pivotRows').value;
+            const values = document.getElementById('pivotValues').value;
+            const agg = document.getElementById('pivotAgg').value;
+            
+            // Group data
+            const groups = {};
+            
+            cleanedData.forEach(row => {
+                const key = row[rows] || 'Unknown';
+                
+                if (!groups[key]) {
+                    groups[key] = [];
+                }
+                
+                let value;
+                if (values === 'nilai_raport') {
+                    value = row.nilai_raport;
+                } else if (values === 'nilai_TKA') {
+                    value = row.nilai_tka;
+                }
+                
+                if (value !== null && !isNaN(value)) {
+                    groups[key].push(value);
+                }
+            });
+            
+            // Hitung agregasi
+            const pivotData = [];
+            for (const [group, values] of Object.entries(groups)) {
+                let result;
+                
+                switch (agg) {
+                    case 'mean':
+                        result = values.reduce((a, b) => a + b, 0) / values.length;
+                        break;
+                    case 'sum':
+                        result = values.reduce((a, b) => a + b, 0);
+                        break;
+                    case 'count':
+                        result = values.length;
+                        break;
+                    case 'min':
+                        result = Math.min(...values);
+                        break;
+                    case 'max':
+                        result = Math.max(...values);
+                        break;
+                }
+                
+                pivotData.push({
+                    group: group,
+                    value: typeof result === 'number' ? result.toFixed(2) : result,
+                    count: values.length
+                });
+            }
+            
+            // Urutkan
+            pivotData.sort((a, b) => b.value - a.value);
+            
+            // Tampilkan
+            const table = document.getElementById('pivotTable');
+            table.innerHTML = `
+                <thead>
+                    <tr class="table-primary">
+                        <th>${rows === 'kelas' ? 'Kelas' : 'Siswa'}</th>
+                        <th>${getAggregationLabel(agg)} ${values === 'nilai_raport' ? 'Nilai Raport' : 'Nilai TKA'}</th>
+                        <th>Jumlah Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${pivotData.map(item => `
+                        <tr>
+                            <td><strong>${item.group}</strong></td>
+                            <td>${item.value}</td>
+                            <td><span class="badge bg-info">${item.count}</span></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+        }
+        
+        // ==================== FUNGSI BANTUAN ====================
+        
+        // Hitung statistik
+        function calculateStats(values) {
+            if (!values || values.length === 0) {
+                return {
+                    mean: 0,
+                    median: 0,
+                    mode: 0,
+                    stdDev: 0,
+                    min: 0,
+                    max: 0,
+                    q1: 0,
+                    q3: 0
+                };
+            }
+            
+            const sorted = [...values].sort((a, b) => a - b);
+            const n = sorted.length;
+            
+            // Mean
+            const mean = sorted.reduce((a, b) => a + b, 0) / n;
+            
+            // Median
+            const median = n % 2 === 0 ? 
+                (sorted[n/2 - 1] + sorted[n/2]) / 2 : 
+                sorted[Math.floor(n/2)];
+            
+            // Mode
+            const frequency = {};
+            let maxFreq = 0;
+            let mode = sorted[0];
+            
+            sorted.forEach(val => {
+                frequency[val] = (frequency[val] || 0) + 1;
+                if (frequency[val] > maxFreq) {
+                    maxFreq = frequency[val];
+                    mode = val;
+                }
+            });
+            
+            // Standard deviation
+            const variance = sorted.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n;
+            const stdDev = Math.sqrt(variance);
+            
+            // Quartiles
+            const q1 = sorted[Math.floor(n * 0.25)];
+            const q3 = sorted[Math.floor(n * 0.75)];
+            
+            return {
+                mean: mean,
+                median: median,
+                mode: mode,
+                stdDev: stdDev,
+                min: sorted[0],
+                max: sorted[n - 1],
+                q1: q1,
+                q3: q3
+            };
+        }
+        
+        // Hitung median
+        function calculateMedian(values) {
+            if (!values || values.length === 0) return 0;
+            
+            const sorted = [...values].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            
+            return sorted.length % 2 === 0 ? 
+                (sorted[mid - 1] + sorted[mid]) / 2 : 
+                sorted[mid];
+        }
+        
+        // Hitung korelasi
+        function calculateCorrelation(x, y) {
+            if (!x || !y || x.length !== y.length || x.length === 0) return 0;
+            
+            const n = x.length;
+            const sumX = x.reduce((a, b) => a + b, 0);
+            const sumY = y.reduce((a, b) => a + b, 0);
+            const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0);
+            const sumX2 = x.reduce((sum, val) => sum + val * val, 0);
+            const sumY2 = y.reduce((sum, val) => sum + val * val, 0);
+            
+            const numerator = n * sumXY - sumX * sumY;
+            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+            
+            return denominator === 0 ? 0 : numerator / denominator;
+        }
+        
+        // Interpretasi korelasi
+        function getCorrelationInterpretation(r) {
+            const absR = Math.abs(r);
+            
+            if (absR >= 0.9) return 'Korelasi sangat kuat';
+            if (absR >= 0.7) return 'Korelasi kuat';
+            if (absR >= 0.5) return 'Korelasi moderat';
+            if (absR >= 0.3) return 'Korelasi lemah';
+            return 'Korelasi sangat lemah atau tidak ada';
+        }
+        
+        // Label agregasi
+        function getAggregationLabel(agg) {
+            const labels = {
+                'mean': 'Rata-rata',
+                'sum': 'Total',
+                'count': 'Jumlah',
+                'min': 'Minimum',
+                'max': 'Maksimum'
+            };
+            return labels[agg] || agg;
+        }
+        
+        // Tampilkan loading
+        function showLoading(show) {
+            const loadingEl = document.createElement('div');
+            loadingEl.className = 'loading';
+            loadingEl.innerHTML = '<div class="spinner-border text-primary loading-spinner" role="status"></div>';
+            
+            if (show) {
+                document.body.appendChild(loadingEl);
+            } else {
+                const existing = document.querySelector('.loading');
+                if (existing) existing.remove();
+            }
+        }
+        
+        // Tampilkan toast notifikasi
+        function showToast(type, title, message) {
+            // Buat elemen toast
+            const toastEl = document.createElement('div');
+            toastEl.className = `toast align-items-center text-bg-${type} border-0`;
+            toastEl.setAttribute('role', 'alert');
+            toastEl.setAttribute('aria-live', 'assertive');
+            toastEl.setAttribute('aria-atomic', 'true');
+            
+            toastEl.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <strong>${title}</strong><br>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            
+            // Tambahkan ke container
+            const container = document.getElementById('toastContainer') || (() => {
+                const div = document.createElement('div');
+                div.id = 'toastContainer';
+                div.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                document.body.appendChild(div);
+                return div;
+            })();
+            
+            container.appendChild(toastEl);
+            
+            // Inisialisasi dan tampilkan
+            const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+            toast.show();
+            
+            // Hapus setelah selesai
+            toastEl.addEventListener('hidden.bs.toast', () => {
+                toastEl.remove();
+            });
+        }
+        
+        // Ekspor chart sebagai gambar
+        function exportChart() {
+            if (!currentChart) {
+                showToast('warning', 'Tidak ada chart!', 'Buat chart terlebih dahulu');
+                return;
+            }
+            
+            const link = document.createElement('a');
+            link.download = `chart-nilai-siswa-${new Date().getTime()}.png`;
+            link.href = currentChart.toBase64Image();
+            link.click();
+            
+            showToast('success', 'Chart diekspor!', 'Grafik berhasil disimpan sebagai PNG');
+        }
+        
+        // Ekspor data sebagai CSV
+        function exportCSV() {
+            const data = cleanedData.length > 0 ? cleanedData : rawData;
+            
+            if (!data || data.length === 0) {
+                showToast('warning', 'Tidak ada data!', 'Load data terlebih dahulu');
+                return;
+            }
+            
+            // Konversi ke CSV
+            const headers = ['nama_siswa', 'kelas', 'nilai_raport', 'nilai_tka'];
+            const csvRows = [headers.join(',')];
+            
+            data.forEach(row => {
+                const values = headers.map(header => {
+                    const val = row[header];
+                    return val !== null && val !== undefined ? `"${val}"` : '""';
+                });
+                csvRows.push(values.join(','));
+            });
+            
+            const csvString = csvRows.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `data-nilai-siswa-${new Date().getTime()}.csv`;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            
+            showToast('success', 'Data diekspor!', 'Data berhasil disimpan sebagai CSV');
+        }
+        
+        // ==================== EVENT LISTENERS ====================
+        
+        // Load data saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load data otomatis
+            setTimeout(() => loadData(), 500);
+            
+            // Setup auto-refresh
+            document.getElementById('autoRefresh').addEventListener('change', function(e) {
+                if (e.target.checked) {
+                    autoRefreshInterval = setInterval(loadData, 30000); // 30 detik
+                    showToast('info', 'Auto-refresh diaktifkan', 'Data akan diperbarui setiap 30 detik');
+                } else {
+                    clearInterval(autoRefreshInterval);
+                    showToast('info', 'Auto-refresh dimatikan', 'Data tidak akan diperbarui otomatis');
+                }
+            });
+            
+            // Mode gelap
+            document.getElementById('darkMode').addEventListener('change', function(e) {
+                document.body.classList.toggle('bg-dark', e.target.checked);
+                document.body.classList.toggle('text-light', e.target.checked);
+                
+                const cards = document.querySelectorAll('.card');
+                cards.forEach(card => {
+                    card.classList.toggle('bg-dark', e.target.checked);
+                    card.classList.toggle('text-light', e.target.checked);
+                });
+            });
+        });
+        
+        // Event listeners untuk tombol
+        document.getElementById('loadDataBtn').addEventListener('click', loadData);
+        document.getElementById('cleanDataBtn').addEventListener('click', cleanData);
+        document.getElementById('analyzeBtn').addEventListener('click', performEDA);
+        
+        // Event listeners untuk ekspor
+        document.getElementById('exportPNG').addEventListener('click', exportChart);
+        document.getElementById('exportCSV').addEventListener('click', exportCSV);
+        document.getElementById('exportPDF').addEventListener('click', function() {
+            showToast('info', 'Fitur PDF', 'Ekspor PDF akan diimplementasikan di versi mendatang');
+        });
+        
+        document.getElementById('exportChartBtn').addEventListener('click', exportChart);
+        
+        // Event listeners untuk chart controls
+        document.querySelectorAll('[data-chart-type]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Update active button
+                document.querySelectorAll('[data-chart-type]').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Update chart
+                createMainChart(this.dataset.chartType);
+            });
+        });
+        
+        // Event listeners untuk kontrol chart
+        document.getElementById('chartDataSelect').addEventListener('change', () => createMainChart());
+        document.getElementById('chartGroupSelect').addEventListener('change', () => createMainChart());
+        document.getElementById('chartThemeSelect').addEventListener('change', () => createMainChart());
+        document.getElementById('chartInteractivity').addEventListener('change', () => createMainChart());
+        
+        // Event listener untuk pivot table
+        document.getElementById('generatePivotBtn').addEventListener('click', generatePivotTable);
+    </script>
+</body>
+</html>
