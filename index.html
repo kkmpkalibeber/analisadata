@@ -659,10 +659,12 @@
         // Konfigurasi
         const DATA_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRh4LhkQFacXW75S33t0NiaGm4rfPRuhcWJ8y4GPfuDrGNyNY1vD6EVWt3yYfCvOtNz80ywUJSIYriJ/pub?gid=0&single=true&output=csv";
         
-        // State aplikasi
+        // State aplikasi - VARIABEL GLOBAL
         let rawData = [];
         let cleanedData = [];
         let currentChart = null;
+        let raportValuesGlobal = [];  // VARIABEL GLOBAL untuk menyimpan nilai raport
+        let tkaValuesGlobal = [];     // VARIABEL GLOBAL untuk menyimpan nilai TKA
         
         // ==================== FUNGSI UTAMA - DIPERBAIKI ====================
         
@@ -974,35 +976,38 @@
             
             showLoading(true);
             
-            // Hitung statistik
-            const raportValues = cleanedData
+            // Hitung statistik - SIMPAN KE VARIABEL GLOBAL
+            raportValuesGlobal = cleanedData
                 .map(row => row.nilai_raport)
                 .filter(val => val !== null && !isNaN(val));
             
-            const tkaValues = cleanedData
+            tkaValuesGlobal = cleanedData
                 .map(row => row.nilai_tka)
                 .filter(val => val !== null && !isNaN(val));
             
-            if (raportValues.length === 0 || tkaValues.length === 0) {
+            if (raportValuesGlobal.length === 0 || tkaValuesGlobal.length === 0) {
                 showToast('error', 'Data tidak valid!', 'Tidak ada data numerik untuk dianalisis');
                 showLoading(false);
                 return;
             }
             
-            const raportStats = calculateStats(raportValues);
-            const tkaStats = calculateStats(tkaValues);
+            const raportStats = calculateStats(raportValuesGlobal);
+            const tkaStats = calculateStats(tkaValuesGlobal);
             
-            // Tampilkan statistik deskriptif
-            displayDescriptiveStats(raportStats, tkaStats);
+            // HITUNG KORELASI DI SINI - PERBAIKAN UTAMA!
+            const correlation = calculateCorrelation(raportValuesGlobal, tkaValuesGlobal);
+            
+            // Tampilkan statistik deskriptif dengan parameter korelasi
+            displayDescriptiveStats(raportStats, tkaStats, correlation);
             
             // Buat chart distribusi
-            createDistributionChart(raportValues, tkaValues);
+            createDistributionChart(raportValuesGlobal, tkaValuesGlobal);
             
             // Buat korelasi chart
-            createCorrelationChart(raportValues, tkaValues);
+            createCorrelationChart(raportValuesGlobal, tkaValuesGlobal);
             
             // Tampilkan info outlier
-            displayOutlierInfo(raportValues, tkaValues);
+            displayOutlierInfo(raportValuesGlobal, tkaValuesGlobal);
             
             // Buat chart utama
             createMainChart();
@@ -1017,8 +1022,8 @@
             showToast('success', 'Analisis EDA selesai!', 'Statistik dan visualisasi telah dihasilkan');
         }
         
-        // 7. Tampilkan statistik deskriptif - FIXED
-        function displayDescriptiveStats(raportStats, tkaStats) {
+        // 7. Tampilkan statistik deskriptif - FIXED (DENGAN PARAMETER KORELASI)
+        function displayDescriptiveStats(raportStats, tkaStats, correlation) {
             const tbody = document.getElementById('statsTable').querySelector('tbody');
             tbody.innerHTML = '';
             
@@ -1044,8 +1049,7 @@
                 tbody.appendChild(tr);
             });
             
-            // Hitung korelasi
-            const correlation = calculateCorrelation(raportValues, tkaValues);
+            // Tampilkan korelasi yang sudah dihitung sebelumnya
             document.getElementById('correlationText').innerHTML = `
                 <strong>Koefisien Korelasi:</strong> ${correlation.toFixed(3)}<br>
                 ${getCorrelationInterpretation(correlation)}
@@ -1971,7 +1975,7 @@
                 sorted[mid];
         }
         
-        // Hitung korelasi
+        // Hitung korelasi - FUNGSI INI FIX DAN AMAN DIPANGGIL
         function calculateCorrelation(x, y) {
             if (!x || !y || x.length !== y.length || x.length === 0) return 0;
             
