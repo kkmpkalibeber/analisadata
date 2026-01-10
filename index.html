@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analisis Nilai Siswa</title>
+    <title>Analisis Nilai Siswa - Complete</title>
     
-    <!-- Chart.js -->
+    <!-- Chart.js dengan heatmap plugin -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- PapaParse for CSV -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@0.1.3/dist/chartjs-chart-matrix.min.js"></script>
+    <!-- PapaParse untuk CSV -->
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -46,6 +47,53 @@
             color: white;
             border-radius: 12px 12px 0 0 !important;
             font-weight: 600;
+        }
+        
+        .heatmap-cell {
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 2px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .heatmap-cell:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 8px rgba(0,0,0,0.3);
+        }
+        
+        .cluster-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .cluster-1 { background-color: #ff6b6b; color: white; }
+        .cluster-2 { background-color: #4ecdc4; color: white; }
+        .cluster-3 { background-color: #ffd166; color: #333; }
+        .cluster-4 { background-color: #06d6a0; color: white; }
+        
+        .matrix-table {
+            font-size: 0.8rem;
+        }
+        
+        .matrix-table th, .matrix-table td {
+            text-align: center;
+            padding: 6px;
+        }
+        
+        .prediction-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
         }
         
         .nav-tabs .nav-link {
@@ -143,14 +191,14 @@
                 <div class="card">
                     <div class="card-body text-center">
                         <h1 class="display-5 fw-bold text-primary">
-                            <i class="fas fa-graduation-cap me-2"></i>Analisis Nilai Siswa
+                            <i class="fas fa-graduation-cap me-2"></i>Analisis Nilai Siswa - Lengkap
                         </h1>
                         <p class="lead">
-                            Analisis otomatis dari data Google Sheets - Monitoring & Evaluasi Performa Siswa
+                            Analisis komprehensif dengan Heatmap, Clustering, dan Prediksi
                         </p>
                         <div class="alert alert-info d-inline-block">
                             <i class="fas fa-info-circle me-2"></i>
-                            Data diambil otomatis dari: 
+                            Data live dari: 
                             <a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vRh4LhkQFacXW75S33t0NiaGm4rfPRuhcWJ8y4GPfuDrGNyNY1vD6EVWt3yYfCvOtNz80ywUJSIYriJ/pub?gid=0&single=true&output=csv" target="_blank">
                                 Google Sheets
                             </a>
@@ -528,6 +576,68 @@
                                         </div>
                                     </div>
                                 </div>
+                                
+                                <!-- Heatmap Section (ditampilkan saat heatmap dipilih) -->
+                                <div class="row mt-4" id="heatmapSection" style="display: none;">
+                                    <div class="col-12">
+                                        <div class="card">
+                                            <div class="card-header bg-warning text-dark">
+                                                <h6 class="mb-0"><i class="fas fa-fire me-2"></i>Heatmap Analysis</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <h6>Heatmap Matrix - Nilai per Siswa</h6>
+                                                        <div id="heatmapMatrix" class="mb-4" style="overflow-x: auto;">
+                                                            <!-- Heatmap akan di-generate di sini -->
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <h6>Heatmap Korelasi - Matrix Chart</h6>
+                                                        <div class="chart-container">
+                                                            <canvas id="heatmapChart"></canvas>
+                                                        </div>
+                                                        <div class="mt-3">
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="me-3">Rendah</div>
+                                                                <div id="heatmapLegend" style="flex-grow: 1; height: 20px; background: linear-gradient(to right, #ff6b6b, #ffd166, #06d6a0); border-radius: 10px;"></div>
+                                                                <div class="ms-3">Tinggi</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="row mt-4">
+                                                    <div class="col-md-4">
+                                                        <div class="card">
+                                                            <div class="card-body">
+                                                                <h6>Heatmap by Kelas</h6>
+                                                                <div id="heatmapByClass">
+                                                                    <!-- Heatmap per kelas -->
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-8">
+                                                        <div class="card">
+                                                            <div class="card-body">
+                                                                <h6>Interpretasi Heatmap:</h6>
+                                                                <div id="heatmapInterpretation">
+                                                                    <!-- Interpretasi akan diisi -->
+                                                                </div>
+                                                                <div class="mt-3">
+                                                                    <button class="btn btn-sm btn-outline-info" id="toggleHeatmapView">
+                                                                        <i class="fas fa-exchange-alt me-1"></i>Toggle View
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- Tab 5: Analisis Lanjutan -->
@@ -575,9 +685,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    
-                                    <div class="col-md-6">
+                                        
                                         <div class="card">
                                             <div class="card-header">
                                                 <h6 class="mb-0"><i class="fas fa-chart-area me-2"></i>Analisis Time Series</h6>
@@ -597,6 +705,101 @@
                                             </div>
                                         </div>
                                     </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="card mb-4">
+                                            <div class="card-header bg-info text-white">
+                                                <h6 class="mb-0"><i class="fas fa-object-group me-2"></i>Clustering Siswa (K-Means)</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Jumlah Cluster:</label>
+                                                    <select class="form-select" id="clusterCount">
+                                                        <option value="2">2 Cluster</option>
+                                                        <option value="3" selected>3 Cluster</option>
+                                                        <option value="4">4 Cluster</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <button class="btn btn-info mb-3" id="runClusteringBtn">
+                                                    <i class="fas fa-play me-2"></i>Run Clustering
+                                                </button>
+                                                
+                                                <div id="clusteringResults">
+                                                    <p>Klik "Run Clustering" untuk mengelompokkan siswa berdasarkan nilai</p>
+                                                </div>
+                                                
+                                                <div class="chart-container mt-3">
+                                                    <canvas id="clusteringChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="card">
+                                            <div class="card-header bg-success text-white">
+                                                <h6 class="mb-0"><i class="fas fa-brain me-2"></i>Prediksi & Regresi</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Prediksi nilai TKA berdasarkan Raport:</label>
+                                                    <div class="input-group">
+                                                        <input type="number" id="predictValue" class="form-control" placeholder="Masukkan nilai raport" min="0" max="100">
+                                                        <button class="btn btn-success" id="predictBtn">Prediksi</button>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div id="predictionResult" class="prediction-card" style="display: none;">
+                                                    <h6><i class="fas fa-calculator me-2"></i>Hasil Prediksi:</h6>
+                                                    <div id="predictionText"></div>
+                                                </div>
+                                                
+                                                <div class="mt-3">
+                                                    <h6>Linear Regression:</h6>
+                                                    <div class="chart-container">
+                                                        <canvas id="regressionChart"></canvas>
+                                                    </div>
+                                                    <div id="regressionEquation" class="mt-2">
+                                                        <!-- Persamaan regresi akan ditampilkan -->
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Matrix Analysis Section -->
+                                <div class="row mt-4">
+                                    <div class="col-12">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0"><i class="fas fa-th-large me-2"></i>Matrix Analysis & Confusion Matrix</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <h6>Performance Matrix per Kelas</h6>
+                                                        <div class="table-responsive">
+                                                            <table class="table table-sm matrix-table" id="performanceMatrix">
+                                                                <!-- Matrix akan diisi -->
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <h6>Confusion Matrix (Klasifikasi)</h6>
+                                                        <div id="confusionMatrixContainer">
+                                                            <!-- Confusion matrix akan diisi -->
+                                                        </div>
+                                                        <div class="mt-3">
+                                                            <h6>Metrics:</h6>
+                                                            <div id="classificationMetrics">
+                                                                <!-- Metrics akan diisi -->
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -609,7 +812,7 @@
         <footer>
             <div class="container">
                 <p class="mb-2">Aplikasi Analisis Nilai Siswa &copy; 2023</p>
-                <p class="small">Data diambil otomatis dari Google Sheets - Analisis realtime dengan JavaScript</p>
+                <p class="small">Dilengkapi dengan Heatmap, Clustering, dan Prediksi</p>
                 <p class="small">
                     <i class="fas fa-sync-alt me-1"></i>Terakhir diperbarui: 
                     <span id="lastUpdate">-</span>
@@ -630,7 +833,9 @@
         let rawData = [];
         let cleanedData = [];
         let currentChart = null;
+        let heatmapChart = null;
         let autoRefreshInterval = null;
+        let isHeatmapView = false;
         
         // Warna untuk chart
         const chartColors = {
@@ -647,7 +852,6 @@
             showLoading(true);
             
             try {
-                // Gunakan PapaParse untuk load CSV
                 const response = await fetch(DATA_URL);
                 const csvText = await response.text();
                 
@@ -657,7 +861,6 @@
                     complete: function(results) {
                         rawData = results.data;
                         
-                        // Normalisasi nama kolom
                         rawData = rawData.map(row => {
                             const normalizedRow = {};
                             for (const key in row) {
@@ -672,10 +875,8 @@
                         updateStats();
                         showLoading(false);
                         
-                        // Tampilkan notifikasi
                         showToast('success', 'Data berhasil dimuat!', `Loaded ${rawData.length} records`);
                         
-                        // Update timestamp
                         document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
                     },
                     error: function(error) {
@@ -704,7 +905,6 @@
             rawData.forEach((row, index) => {
                 const tr = document.createElement('tr');
                 
-                // Cek nilai yang kosong
                 const raportVal = row.nilai_raport || row.nilai_raport === 0 ? parseFloat(row.nilai_raport) : null;
                 const tkaVal = row.nilai_tka || row.nilai_TKA || row.nilai_tka === 0 || row.nilai_TKA === 0 
                     ? parseFloat(row.nilai_tka || row.nilai_TKA) 
@@ -740,10 +940,8 @@
             
             showLoading(true);
             
-            // Salin data mentah
             cleanedData = JSON.parse(JSON.stringify(rawData));
             
-            // Hasil cleaning
             const cleaningResults = {
                 duplicatesRemoved: 0,
                 missingFilled: 0,
@@ -751,7 +949,7 @@
                 namesNormalized: 0
             };
             
-            // A. Hapus duplikat (jika dicentang)
+            // A. Hapus duplikat
             if (document.getElementById('removeDuplicates').checked) {
                 const uniqueMap = new Map();
                 const initialCount = cleanedData.length;
@@ -768,7 +966,7 @@
                 cleaningResults.duplicatesRemoved = initialCount - cleanedData.length;
             }
             
-            // B. Normalisasi nama (Title Case)
+            // B. Normalisasi nama
             if (document.getElementById('normalizeNames').checked) {
                 cleanedData.forEach(row => {
                     if (row.nama_siswa) {
@@ -788,7 +986,6 @@
             // C. Konversi tipe data
             if (document.getElementById('fixTypes').checked) {
                 cleanedData.forEach(row => {
-                    // Konversi nilai numerik
                     if (row.nilai_raport) {
                         const val = parseFloat(row.nilai_raport);
                         row.nilai_raport = isNaN(val) ? null : val;
@@ -803,7 +1000,6 @@
                         delete row.nilai_TKA;
                     }
                     
-                    // Pastikan kelas string
                     if (row.kelas) {
                         row.kelas = String(row.kelas).toUpperCase();
                     }
@@ -812,10 +1008,8 @@
             
             // D. Handle missing values
             if (document.getElementById('fillMissing').checked) {
-                // Hitung median per kelas untuk nilai raport
                 const kelasMap = {};
                 
-                // Kelompokkan data per kelas
                 cleanedData.forEach(row => {
                     if (!row.kelas) return;
                     
@@ -835,13 +1029,11 @@
                     }
                 });
                 
-                // Hitung median per kelas
                 for (const kelas in kelasMap) {
                     kelasMap[kelas].raportMedian = calculateMedian(kelasMap[kelas].raportValues);
                     kelasMap[kelas].tkaMedian = calculateMedian(kelasMap[kelas].tkaValues);
                 }
                 
-                // Isi nilai yang kosong
                 cleanedData.forEach(row => {
                     if ((row.nilai_raport === null || isNaN(row.nilai_raport)) && row.kelas && kelasMap[row.kelas]) {
                         row.nilai_raport = kelasMap[row.kelas].raportMedian || 70;
@@ -868,7 +1060,6 @@
                 const raportStats = calculateStats(raportValues);
                 const tkaStats = calculateStats(tkaValues);
                 
-                // Deteksi outlier menggunakan IQR method
                 cleanedData.forEach(row => {
                     if (row.nilai_raport !== null && !isNaN(row.nilai_raport)) {
                         const raportQ1 = raportStats.q1;
@@ -895,6 +1086,12 @@
             // Generate analisis
             performEDA();
             
+            // Generate heatmap
+            createHeatmap();
+            
+            // Generate analisis lanjutan
+            performAdvancedAnalysis();
+            
             showLoading(false);
             showToast('success', 'Data cleaning selesai!', 
                 `${cleaningResults.duplicatesRemoved} duplikat dihapus, ${cleaningResults.missingFilled} nilai diisi`);
@@ -908,7 +1105,6 @@
             issuesList.innerHTML = '';
             resultsDiv.innerHTML = '';
             
-            // Tampilkan isu data
             const issues = [
                 { text: `Data duplikat: ${results.duplicatesRemoved} ditemukan`, type: 'warning' },
                 { text: `Nilai kosong: ${results.missingFilled} diisi`, type: 'info' },
@@ -926,7 +1122,6 @@
                 issuesList.appendChild(li);
             });
             
-            // Tampilkan ringkasan hasil
             resultsDiv.innerHTML = `
                 <div class="alert alert-success">
                     <h6><i class="fas fa-check-circle me-2"></i>Data Berhasil Dibersihkan!</h6>
@@ -949,13 +1144,11 @@
                 return;
             }
             
-            // Tampilkan maksimal 10 baris
             const displayData = cleanedData.slice(0, 10);
             
             displayData.forEach(row => {
                 const tr = document.createElement('tr');
                 
-                // Highlight outlier
                 const outlierClass = row.isOutlier ? 'table-warning' : '';
                 
                 tr.innerHTML = `
@@ -1009,7 +1202,7 @@
             // Buat chart utama
             createMainChart();
             
-            // Buat time series chart (simulasi)
+            // Buat time series chart
             createTimeSeriesChart();
         }
         
@@ -1052,12 +1245,10 @@
         function createDistributionChart(raportValues, tkaValues) {
             const ctx = document.getElementById('distributionChart').getContext('2d');
             
-            // Hancurkan chart sebelumnya jika ada
             if (window.distributionChart) {
                 window.distributionChart.destroy();
             }
             
-            // Buat bins untuk histogram
             const createBins = (data, binCount = 10) => {
                 const min = Math.min(...data);
                 const max = Math.max(...data);
@@ -1138,12 +1329,10 @@
         function createCorrelationChart(raportValues, tkaValues) {
             const ctx = document.getElementById('correlationChart').getContext('2d');
             
-            // Hancurkan chart sebelumnya jika ada
             if (window.correlationChart) {
                 window.correlationChart.destroy();
             }
             
-            // Data untuk scatter plot
             const scatterData = [];
             for (let i = 0; i < Math.min(raportValues.length, tkaValues.length); i++) {
                 scatterData.push({ x: raportValues[i], y: tkaValues[i] });
@@ -1199,185 +1388,461 @@
             });
         }
         
-        // 10. Tampilkan info outlier
-        function displayOutlierInfo() {
-            const outlierInfo = document.getElementById('outlierInfo');
+        // 10. Buat HEATMAP (Fitur yang belum jalan sebelumnya)
+        function createHeatmap() {
+            if (!cleanedData || cleanedData.length === 0) return;
             
-            if (!cleanedData || cleanedData.length === 0) {
-                outlierInfo.innerHTML = '<p class="text-muted">Data belum dianalisis</p>';
-                return;
+            // 1. Buat Heatmap Chart (Matrix Chart)
+            const ctx = document.getElementById('heatmapChart').getContext('2d');
+            
+            if (heatmapChart) {
+                heatmapChart.destroy();
             }
             
-            const outliers = cleanedData.filter(row => row.isOutlier);
+            // Siapkan data untuk heatmap
+            const students = cleanedData.slice(0, 10); // Ambil 10 siswa pertama
+            const labels = students.map(s => s.nama_siswa.substring(0, 10) + '...');
             
-            if (outliers.length === 0) {
-                outlierInfo.innerHTML = `
-                    <div class="alert alert-success">
-                        <i class="fas fa-check-circle me-2"></i>Tidak ditemukan outlier yang signifikan
-                    </div>
-                `;
-                return;
-            }
+            // Data matrix: [siswa][nilai_raport, nilai_tka]
+            const matrixData = students.map(student => [
+                {x: 0, y: 0, v: student.nilai_raport || 0},
+                {x: 1, y: 0, v: student.nilai_tka || 0}
+            ]).flat();
             
-            let html = `
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>${outliers.length} outlier terdeteksi!</strong>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Nama Siswa</th>
-                                <th>Kelas</th>
-                                <th>Nilai Raport</th>
-                                <th>Nilai TKA</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
+            // Buat chart matrix
+            heatmapChart = new Chart(ctx, {
+                type: 'matrix',
+                data: {
+                    datasets: [{
+                        label: 'Heatmap Nilai',
+                        data: matrixData,
+                        backgroundColor: function(context) {
+                            const value = context.dataset.data[context.dataIndex].v;
+                            // Normalisasi nilai 0-100 ke warna
+                            const normalized = value / 100;
+                            const r = Math.round(255 * (1 - normalized));
+                            const g = Math.round(255 * normalized);
+                            const b = 0;
+                            return `rgba(${r}, ${g}, ${b}, 0.7)`;
+                        },
+                        borderColor: 'rgba(0,0,0,0.8)',
+                        borderWidth: 1,
+                        width: function(context) {
+                            const chart = context.chart;
+                            const {chartArea} = chart;
+                            return (chartArea.right - chartArea.left) / 2 - 10;
+                        },
+                        height: function(context) {
+                            const chart = context.chart;
+                            const {chartArea} = chart;
+                            return (chartArea.bottom - chartArea.top) / students.length - 10;
+                        }
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Heatmap Nilai Siswa (10 Teratas)'
+                        },
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const data = context.dataset.data[context.dataIndex];
+                                    const xLabel = data.x === 0 ? 'Nilai Raport' : 'Nilai TKA';
+                                    const student = students[data.y];
+                                    return `${student.nama_siswa}: ${xLabel} = ${data.v.toFixed(1)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                callback: function(value) {
+                                    return value === 0 ? 'Raport' : 'TKA';
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                callback: function(value, index) {
+                                    return students[index]?.nama_siswa.substring(0, 8) + '...' || '';
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
             
-            outliers.slice(0, 5).forEach(row => {
+            // 2. Buat HTML Heatmap Matrix
+            generateHeatmapMatrix();
+            
+            // 3. Buat Heatmap per Kelas
+            generateClassHeatmap();
+            
+            // 4. Tampilkan interpretasi
+            displayHeatmapInterpretation();
+        }
+        
+        // 11. Generate Heatmap Matrix (HTML)
+        function generateHeatmapMatrix() {
+            const container = document.getElementById('heatmapMatrix');
+            container.innerHTML = '';
+            
+            if (!cleanedData || cleanedData.length === 0) return;
+            
+            // Ambil 15 siswa pertama untuk matrix
+            const displayData = cleanedData.slice(0, 15);
+            
+            // Buat table untuk heatmap
+            let html = '<div class="table-responsive"><table class="table table-sm matrix-table">';
+            
+            // Header
+            html += '<thead><tr><th>Siswa</th><th>Kelas</th><th>Raport</th><th>TKA</th><th>Avg</th></tr></thead><tbody>';
+            
+            displayData.forEach(student => {
+                const raport = student.nilai_raport || 0;
+                const tka = student.nilai_tka || 0;
+                const avg = (raport + tka) / 2;
+                
+                // Tentukan warna berdasarkan nilai
+                const getColor = (value) => {
+                    const normalized = value / 100;
+                    const r = Math.round(255 * (1 - normalized));
+                    const g = Math.round(255 * normalized);
+                    const b = 0;
+                    return `rgb(${r}, ${g}, ${b})`;
+                };
+                
                 html += `
                     <tr>
-                        <td>${row.nama_siswa}</td>
-                        <td><span class="badge bg-primary">${row.kelas}</span></td>
-                        <td>${row.nilai_raport.toFixed(1)}</td>
-                        <td>${row.nilai_tka.toFixed(1)}</td>
+                        <td><strong>${student.nama_siswa.substring(0, 12)}${student.nama_siswa.length > 12 ? '...' : ''}</strong></td>
+                        <td><span class="badge bg-primary">${student.kelas || '-'}</span></td>
+                        <td><div class="heatmap-cell" style="background-color: ${getColor(raport)}; color: ${raport > 50 ? 'white' : 'black'}">${raport.toFixed(1)}</div></td>
+                        <td><div class="heatmap-cell" style="background-color: ${getColor(tka)}; color: ${tka > 50 ? 'white' : 'black'}">${tka.toFixed(1)}</div></td>
+                        <td><div class="heatmap-cell" style="background-color: ${getColor(avg)}; color: ${avg > 50 ? 'white' : 'black'}">${avg.toFixed(1)}</div></td>
                     </tr>
                 `;
             });
             
-            html += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            
-            if (outliers.length > 5) {
-                html += `<p class="text-muted">... dan ${outliers.length - 5} outlier lainnya</p>`;
-            }
-            
-            outlierInfo.innerHTML = html;
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
         }
         
-        // 11. Buat chart utama (interaktif)
-        function createMainChart(type = 'bar') {
-            const ctx = document.getElementById('mainChart').getContext('2d');
+        // 12. Generate Heatmap per Kelas
+        function generateClassHeatmap() {
+            const container = document.getElementById('heatmapByClass');
+            container.innerHTML = '';
             
-            // Hancurkan chart sebelumnya jika ada
-            if (currentChart) {
-                currentChart.destroy();
-            }
+            if (!cleanedData || cleanedData.length === 0) return;
+            
+            // Kelompokkan data per kelas
+            const classData = {};
+            cleanedData.forEach(student => {
+                const kelas = student.kelas || 'Unknown';
+                if (!classData[kelas]) {
+                    classData[kelas] = {
+                        raportValues: [],
+                        tkaValues: [],
+                        students: []
+                    };
+                }
+                classData[kelas].raportValues.push(student.nilai_raport || 0);
+                classData[kelas].tkaValues.push(student.nilai_tka || 0);
+                classData[kelas].students.push(student);
+            });
+            
+            // Hitung rata-rata per kelas
+            let html = '<div class="table-responsive"><table class="table table-sm">';
+            html += '<thead><tr><th>Kelas</th><th>Jml Siswa</th><th>Avg Raport</th><th>Avg TKA</th><th>Heatmap</th></tr></thead><tbody>';
+            
+            Object.keys(classData).forEach(kelas => {
+                const data = classData[kelas];
+                const avgRaport = data.raportValues.reduce((a, b) => a + b, 0) / data.raportValues.length;
+                const avgTKA = data.tkaValues.reduce((a, b) => a + b, 0) / data.tkaValues.length;
+                const totalAvg = (avgRaport + avgTKA) / 2;
+                
+                // Buat bar heatmap sederhana
+                const getBarWidth = (value) => Math.max(10, (value / 100) * 100);
+                const getBarColor = (value) => {
+                    const normalized = value / 100;
+                    const r = Math.round(255 * (1 - normalized));
+                    const g = Math.round(255 * normalized);
+                    return `rgb(${r}, ${g}, 0)`;
+                };
+                
+                html += `
+                    <tr>
+                        <td><strong>${kelas}</strong></td>
+                        <td><span class="badge bg-info">${data.students.length}</span></td>
+                        <td>${avgRaport.toFixed(1)}</td>
+                        <td>${avgTKA.toFixed(1)}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="me-1" style="width: ${getBarWidth(avgRaport)}px; height: 20px; background-color: ${getBarColor(avgRaport)}; border-radius: 3px;" title="Raport: ${avgRaport.toFixed(1)}"></div>
+                                <div style="width: ${getBarWidth(avgTKA)}px; height: 20px; background-color: ${getBarColor(avgTKA)}; border-radius: 3px;" title="TKA: ${avgTKA.toFixed(1)}"></div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+        
+        // 13. Display Heatmap Interpretation
+        function displayHeatmapInterpretation() {
+            const container = document.getElementById('heatmapInterpretation');
             
             if (!cleanedData || cleanedData.length === 0) {
-                ctx.font = '16px Arial';
-                ctx.fillText('Data belum tersedia untuk visualisasi', 50, 100);
+                container.innerHTML = '<p class="text-muted">Data belum tersedia untuk analisis heatmap</p>';
                 return;
             }
             
-            // Persiapkan data berdasarkan pilihan
-            const dataType = document.getElementById('chartDataSelect').value;
-            const groupBy = document.getElementById('chartGroupSelect').value;
-            const theme = document.getElementById('chartThemeSelect').value;
+            // Hitung statistik untuk interpretasi
+            const raportValues = cleanedData.map(s => s.nilai_raport || 0);
+            const tkaValues = cleanedData.map(s => s.nilai_tka || 0);
             
-            let labels = [];
-            let datasets = [];
+            const raportAvg = raportValues.reduce((a, b) => a + b, 0) / raportValues.length;
+            const tkaAvg = tkaValues.reduce((a, b) => a + b, 0) / tkaValues.length;
             
-            // Data per kelas
-            if (groupBy === 'kelas') {
-                const kelasMap = {};
+            // Hitung persentase siswa dengan nilai di atas rata-rata
+            const aboveAvgRaport = raportValues.filter(v => v > raportAvg).length;
+            const aboveAvgTKA = tkaValues.filter(v => v > tkaAvg).length;
+            
+            const percentAboveRaport = (aboveAvgRaport / raportValues.length * 100).toFixed(1);
+            const percentAboveTKA = (aboveAvgTKA / tkaValues.length * 100).toFixed(1);
+            
+            container.innerHTML = `
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-lightbulb me-2"></i>Interpretasi Heatmap:</h6>
+                    <ul class="mb-0">
+                        <li>Warna <strong style="color: #ff6b6b;">merah</strong> menunjukkan nilai rendah (0-40)</li>
+                        <li>Warna <strong style="color: #ffd166;">kuning</strong> menunjukkan nilai sedang (40-70)</li>
+                        <li>Warna <strong style="color: #06d6a0;">hijau</strong> menunjukkan nilai tinggi (70-100)</li>
+                        <li>Rata-rata nilai Raport: <strong>${raportAvg.toFixed(1)}</strong></li>
+                        <li>Rata-rata nilai TKA: <strong>${tkaAvg.toFixed(1)}</strong></li>
+                        <li><strong>${percentAboveRaport}%</strong> siswa memiliki nilai Raport di atas rata-rata</li>
+                        <li><strong>${percentAboveTKA}%</strong> siswa memiliki nilai TKA di atas rata-rata</li>
+                    </ul>
+                </div>
+            `;
+        }
+        
+        // 14. Perform Advanced Analysis (Clustering & Prediction)
+        function performAdvancedAnalysis() {
+            if (!cleanedData || cleanedData.length === 0) return;
+            
+            // Generate Pivot Table
+            generatePivotTable();
+            
+            // Generate Performance Matrix
+            generatePerformanceMatrix();
+            
+            // Generate Confusion Matrix
+            generateConfusionMatrix();
+            
+            // Run Clustering
+            runClustering();
+            
+            // Generate Regression
+            generateRegression();
+        }
+        
+        // 15. K-Means Clustering
+        function runClustering() {
+            if (!cleanedData || cleanedData.length === 0) {
+                document.getElementById('clusteringResults').innerHTML = 
+                    '<p class="text-muted">Data belum tersedia untuk clustering</p>';
+                return;
+            }
+            
+            const k = parseInt(document.getElementById('clusterCount').value);
+            
+            // Siapkan data untuk clustering
+            const data = cleanedData.map(student => [
+                student.nilai_raport || 0,
+                student.nilai_tka || 0
+            ]);
+            
+            // Implementasi K-Means sederhana
+            const centroids = initializeCentroids(data, k);
+            const assignments = assignToCentroids(data, centroids);
+            const newCentroids = updateCentroids(data, assignments, k);
+            
+            // Tampilkan hasil clustering
+            displayClusteringResults(assignments, newCentroids);
+            
+            // Buat chart clustering
+            createClusteringChart(data, assignments, newCentroids);
+        }
+        
+        // 16. Initialize Centroids (K-Means)
+        function initializeCentroids(data, k) {
+            const centroids = [];
+            const indices = new Set();
+            
+            // Pilih k titik acak sebagai centroid awal
+            while (centroids.length < k) {
+                const randomIndex = Math.floor(Math.random() * data.length);
+                if (!indices.has(randomIndex)) {
+                    indices.add(randomIndex);
+                    centroids.push([...data[randomIndex]]);
+                }
+            }
+            
+            return centroids;
+        }
+        
+        // 17. Assign to Centroids
+        function assignToCentroids(data, centroids) {
+            const assignments = [];
+            
+            data.forEach(point => {
+                let minDistance = Infinity;
+                let clusterIndex = 0;
                 
-                cleanedData.forEach(row => {
-                    if (!row.kelas) return;
-                    
-                    if (!kelasMap[row.kelas]) {
-                        kelasMap[row.kelas] = {
-                            raportValues: [],
-                            tkaValues: []
-                        };
-                    }
-                    
-                    if (row.nilai_raport !== null && !isNaN(row.nilai_raport)) {
-                        kelasMap[row.kelas].raportValues.push(row.nilai_raport);
-                    }
-                    
-                    if (row.nilai_tka !== null && !isNaN(row.nilai_tka)) {
-                        kelasMap[row.kelas].tkaValues.push(row.nilai_tka);
+                centroids.forEach((centroid, index) => {
+                    const distance = euclideanDistance(point, centroid);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        clusterIndex = index;
                     }
                 });
                 
-                labels = Object.keys(kelasMap).sort();
+                assignments.push(clusterIndex);
+            });
+            
+            return assignments;
+        }
+        
+        // 18. Euclidean Distance
+        function euclideanDistance(point1, point2) {
+            return Math.sqrt(
+                Math.pow(point1[0] - point2[0], 2) + 
+                Math.pow(point1[1] - point2[1], 2)
+            );
+        }
+        
+        // 19. Update Centroids
+        function updateCentroids(data, assignments, k) {
+            const sums = Array(k).fill().map(() => [0, 0]);
+            const counts = Array(k).fill(0);
+            
+            data.forEach((point, index) => {
+                const cluster = assignments[index];
+                sums[cluster][0] += point[0];
+                sums[cluster][1] += point[1];
+                counts[cluster]++;
+            });
+            
+            return sums.map((sum, index) => [
+                counts[index] > 0 ? sum[0] / counts[index] : 0,
+                counts[index] > 0 ? sum[1] / counts[index] : 0
+            ]);
+        }
+        
+        // 20. Display Clustering Results
+        function displayClusteringResults(assignments, centroids) {
+            const container = document.getElementById('clusteringResults');
+            
+            // Hitung jumlah per cluster
+            const clusterCounts = assignments.reduce((acc, cluster) => {
+                acc[cluster] = (acc[cluster] || 0) + 1;
+                return acc;
+            }, {});
+            
+            let html = `
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-check-circle me-2"></i>Clustering Berhasil!</h6>
+                    <p>${Object.keys(clusterCounts).length} cluster terbentuk:</p>
+                    <div class="row">
+            `;
+            
+            Object.keys(clusterCounts).sort().forEach(cluster => {
+                const count = clusterCounts[cluster];
+                const percentage = (count / assignments.length * 100).toFixed(1);
+                const centroid = centroids[cluster];
                 
-                if (dataType === 'raport' || dataType === 'both') {
-                    datasets.push({
-                        label: 'Rata-rata Raport',
-                        data: labels.map(kelas => {
-                            const values = kelasMap[kelas].raportValues;
-                            return values.length > 0 ? values.reduce((a, b) => a + b) / values.length : 0;
-                        }),
-                        backgroundColor: chartColors[theme][0],
-                        borderColor: chartColors[theme][0],
-                        borderWidth: 1
-                    });
-                }
-                
-                if (dataType === 'tka' || dataType === 'both') {
-                    datasets.push({
-                        label: 'Rata-rata TKA',
-                        data: labels.map(kelas => {
-                            const values = kelasMap[kelas].tkaValues;
-                            return values.length > 0 ? values.reduce((a, b) => a + b) / values.length : 0;
-                        }),
-                        backgroundColor: chartColors[theme][1],
-                        borderColor: chartColors[theme][1],
-                        borderWidth: 1
-                    });
-                }
-                
-                document.getElementById('chartTitle').textContent = 'Perbandingan Nilai per Kelas';
+                html += `
+                    <div class="col-md-4">
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <h6><span class="cluster-badge cluster-${parseInt(cluster) + 1}">Cluster ${parseInt(cluster) + 1}</span></h6>
+                                <p class="mb-1">Jumlah: <strong>${count}</strong> siswa</p>
+                                <p class="mb-1">Persentase: <strong>${percentage}%</strong></p>
+                                <p class="mb-0">Centroid: (${centroid[0].toFixed(1)}, ${centroid[1].toFixed(1)})</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                    <p class="mt-2 mb-0">Clustering berdasarkan nilai Raport dan TKA menggunakan algoritma K-Means</p>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+            
+            // Update data siswa dengan cluster info
+            cleanedData.forEach((student, index) => {
+                student.cluster = assignments[index] + 1;
+            });
+        }
+        
+        // 21. Create Clustering Chart
+        function createClusteringChart(data, assignments, centroids) {
+            const ctx = document.getElementById('clusteringChart').getContext('2d');
+            
+            if (window.clusteringChart) {
+                window.clusteringChart.destroy();
             }
             
-            // Data per siswa (top 10)
-            else if (groupBy === 'siswa') {
-                const sortedData = [...cleanedData]
-                    .sort((a, b) => {
-                        const aAvg = ((a.nilai_raport || 0) + (a.nilai_tka || 0)) / 2;
-                        const bAvg = ((b.nilai_raport || 0) + (b.nilai_tka || 0)) / 2;
-                        return bAvg - aAvg;
-                    })
-                    .slice(0, 10);
+            // Siapkan data per cluster
+            const clusterColors = ['#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0'];
+            const datasets = [];
+            
+            for (let i = 0; i < centroids.length; i++) {
+                const clusterData = data.filter((_, index) => assignments[index] === i);
                 
-                labels = sortedData.map(row => row.nama_siswa.substring(0, 15) + (row.nama_siswa.length > 15 ? '...' : ''));
-                
-                if (dataType === 'raport' || dataType === 'both') {
-                    datasets.push({
-                        label: 'Nilai Raport',
-                        data: sortedData.map(row => row.nilai_raport || 0),
-                        backgroundColor: chartColors[theme][0],
-                        borderColor: chartColors[theme][0],
-                        borderWidth: 1
-                    });
-                }
-                
-                if (dataType === 'tka' || dataType === 'both') {
-                    datasets.push({
-                        label: 'Nilai TKA',
-                        data: sortedData.map(row => row.nilai_tka || 0),
-                        backgroundColor: chartColors[theme][1],
-                        borderColor: chartColors[theme][1],
-                        borderWidth: 1
-                    });
-                }
-                
-                document.getElementById('chartTitle').textContent = '10 Siswa dengan Nilai Tertinggi';
+                datasets.push({
+                    label: `Cluster ${i + 1}`,
+                    data: clusterData.map(point => ({x: point[0], y: point[1]})),
+                    backgroundColor: clusterColors[i % clusterColors.length],
+                    borderColor: clusterColors[i % clusterColors.length],
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                });
             }
             
-            // Konfigurasi chart
-            const chartConfig = {
-                type: type,
+            // Tambahkan centroids
+            datasets.push({
+                label: 'Centroids',
+                data: centroids.map((centroid, index) => ({x: centroid[0], y: centroid[1]})),
+                backgroundColor: '#333',
+                borderColor: '#333',
+                pointRadius: 10,
+                pointStyle: 'triangle'
+            });
+            
+            window.clusteringChart = new Chart(ctx, {
+                type: 'scatter',
                 data: {
-                    labels: labels,
                     datasets: datasets
                 },
                 options: {
@@ -1386,119 +1851,92 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: document.getElementById('chartTitle').textContent,
-                            font: {
-                                size: 16
-                            }
+                            text: 'K-Means Clustering Results'
                         },
                         legend: {
                             position: 'top'
-                        },
-                        tooltip: {
-                            enabled: document.getElementById('chartInteractivity').checked,
-                            mode: 'index',
-                            intersect: false
                         }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            title: {
-                                display: true,
-                                text: 'Nilai'
-                            }
-                        },
                         x: {
                             title: {
                                 display: true,
-                                text: groupBy === 'kelas' ? 'Kelas' : 'Siswa'
-                            }
+                                text: 'Nilai Raport'
+                            },
+                            min: 0,
+                            max: 100
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Nilai TKA'
+                            },
+                            min: 0,
+                            max: 100
                         }
-                    },
-                    interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
                     }
                 }
-            };
-            
-            // Tambahkan opsi khusus per tipe chart
-            if (type === 'line') {
-                chartConfig.options.elements = {
-                    line: {
-                        tension: 0.3
-                    }
-                };
-            } else if (type === 'pie') {
-                chartConfig.options.plugins.tooltip = {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = Math.round((value / total) * 100);
-                            return `${label}: ${value} (${percentage}%)`;
-                        }
-                    }
-                };
-            }
-            
-            // Buat chart
-            currentChart = new Chart(ctx, chartConfig);
+            });
         }
         
-        // 12. Buat time series chart (simulasi)
-        function createTimeSeriesChart() {
-            const ctx = document.getElementById('timeSeriesChart').getContext('2d');
+        // 22. Linear Regression untuk Prediksi
+        function generateRegression() {
+            if (!cleanedData || cleanedData.length === 0) return;
             
-            // Hancurkan chart sebelumnya jika ada
-            if (window.timeSeriesChart) {
-                window.timeSeriesChart.destroy();
+            const ctx = document.getElementById('regressionChart').getContext('2d');
+            
+            if (window.regressionChart) {
+                window.regressionChart.destroy();
             }
             
-            // Generate data simulasi time series
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            // Siapkan data untuk regresi
+            const xValues = cleanedData.map(s => s.nilai_raport || 0);
+            const yValues = cleanedData.map(s => s.nilai_tka || 0);
             
-            // Data simulasi: rata-rata nilai per bulan
-            const raportTrend = [];
-            const tkaTrend = [];
-            let baseRaport = 75;
-            let baseTKA = 70;
+            // Hitung regresi linear sederhana
+            const n = xValues.length;
+            const sumX = xValues.reduce((a, b) => a + b, 0);
+            const sumY = yValues.reduce((a, b) => a + b, 0);
+            const sumXY = xValues.reduce((sum, x, i) => sum + x * yValues[i], 0);
+            const sumX2 = xValues.reduce((sum, x) => sum + x * x, 0);
             
-            for (let i = 0; i < 12; i++) {
-                // Fluktuasi acak
-                const raportVariation = Math.random() * 10 - 5;
-                const tkaVariation = Math.random() * 10 - 5;
-                
-                // Tren naik sedikit
-                const trend = i * 0.5;
-                
-                raportTrend.push(baseRaport + raportVariation + trend);
-                tkaTrend.push(baseTKA + tkaVariation + trend);
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            
+            // Buat garis regresi
+            const regressionLine = [];
+            for (let x = 0; x <= 100; x += 10) {
+                regressionLine.push({x: x, y: slope * x + intercept});
             }
             
-            window.timeSeriesChart = new Chart(ctx, {
-                type: 'line',
+            // Tampilkan persamaan regresi
+            document.getElementById('regressionEquation').innerHTML = `
+                <div class="alert alert-info">
+                    <strong>Persamaan Regresi:</strong> TKA = ${slope.toFixed(3)} × Raport + ${intercept.toFixed(3)}<br>
+                    <strong>R²:</strong> ${calculateRSquared(xValues, yValues, slope, intercept).toFixed(3)}
+                </div>
+            `;
+            
+            // Buat chart
+            window.regressionChart = new Chart(ctx, {
+                type: 'scatter',
                 data: {
-                    labels: months,
                     datasets: [
                         {
-                            label: 'Nilai Raport (simulasi)',
-                            data: raportTrend,
+                            label: 'Data Aktual',
+                            data: xValues.map((x, i) => ({x: x, y: yValues[i]})),
+                            backgroundColor: 'rgba(67, 97, 238, 0.7)',
                             borderColor: 'rgba(67, 97, 238, 1)',
-                            backgroundColor: 'rgba(67, 97, 238, 0.1)',
-                            tension: 0.3,
-                            fill: true
+                            pointRadius: 5
                         },
                         {
-                            label: 'Nilai TKA (simulasi)',
-                            data: tkaTrend,
-                            borderColor: 'rgba(76, 201, 240, 1)',
-                            backgroundColor: 'rgba(76, 201, 240, 0.1)',
-                            tension: 0.3,
-                            fill: true
+                            label: 'Garis Regresi',
+                            data: regressionLine,
+                            backgroundColor: 'rgba(255, 107, 107, 0.7)',
+                            borderColor: 'rgba(255, 107, 107, 1)',
+                            type: 'line',
+                            fill: false,
+                            tension: 0
                         }
                     ]
                 },
@@ -1508,160 +1946,276 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Tren Nilai per Bulan (Simulasi)'
+                            text: 'Linear Regression: Prediksi TKA dari Raport'
                         },
                         legend: {
                             position: 'top'
                         }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: false,
-                            min: 60,
-                            max: 90,
-                            title: {
-                                display: true,
-                                text: 'Nilai Rata-rata'
-                            }
-                        },
                         x: {
                             title: {
                                 display: true,
-                                text: 'Bulan'
-                            }
+                                text: 'Nilai Raport'
+                            },
+                            min: 0,
+                            max: 100
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Nilai TKA'
+                            },
+                            min: 0,
+                            max: 100
                         }
                     }
                 }
             });
+            
+            // Simpan parameter regresi untuk prediksi
+            window.regressionParams = { slope, intercept };
         }
         
-        // 13. Update statistik ringkasan
-        function updateStats() {
-            const data = cleanedData.length > 0 ? cleanedData : rawData;
+        // 23. Calculate R-Squared
+        function calculateRSquared(xValues, yValues, slope, intercept) {
+            const yMean = yValues.reduce((a, b) => a + b, 0) / yValues.length;
             
-            if (!data || data.length === 0) {
-                document.getElementById('statsSection').style.display = 'none';
-                return;
-            }
+            let ssRes = 0;
+            let ssTot = 0;
             
-            document.getElementById('statsSection').style.display = 'flex';
-            
-            // Hitung statistik
-            const totalStudents = data.length;
-            
-            const raportValues = data
-                .map(row => parseFloat(row.nilai_raport) || parseFloat(row.nilai_raport) === 0 ? parseFloat(row.nilai_raport) : null)
-                .filter(val => val !== null && !isNaN(val));
-            
-            const tkaValues = data
-                .map(row => parseFloat(row.nilai_tka) || parseFloat(row.nilai_TKA) || 
-                           parseFloat(row.nilai_tka) === 0 || parseFloat(row.nilai_TKA) === 0 ? 
-                           parseFloat(row.nilai_tka || row.nilai_TKA) : null)
-                .filter(val => val !== null && !isNaN(val));
-            
-            // Hitung rata-rata
-            const avgRaport = raportValues.length > 0 ? 
-                raportValues.reduce((a, b) => a + b, 0) / raportValues.length : 0;
-            
-            const avgTKA = tkaValues.length > 0 ? 
-                tkaValues.reduce((a, b) => a + b, 0) / tkaValues.length : 0;
-            
-            // Hitung jumlah kelas unik
-            const uniqueClasses = [...new Set(data.map(row => row.kelas).filter(Boolean))];
-            
-            // Update UI
-            document.getElementById('totalStudents').textContent = totalStudents;
-            document.getElementById('avgRaport').textContent = avgRaport.toFixed(1);
-            document.getElementById('avgTKA').textContent = avgTKA.toFixed(1);
-            document.getElementById('totalClasses').textContent = uniqueClasses.length;
-        }
-        
-        // 14. Generate pivot table
-        function generatePivotTable() {
-            if (!cleanedData || cleanedData.length === 0) {
-                showToast('warning', 'Data belum tersedia!', 'Load dan clean data terlebih dahulu');
-                return;
-            }
-            
-            const rows = document.getElementById('pivotRows').value;
-            const values = document.getElementById('pivotValues').value;
-            const agg = document.getElementById('pivotAgg').value;
-            
-            // Group data
-            const groups = {};
-            
-            cleanedData.forEach(row => {
-                const key = row[rows] || 'Unknown';
-                
-                if (!groups[key]) {
-                    groups[key] = [];
-                }
-                
-                let value;
-                if (values === 'nilai_raport') {
-                    value = row.nilai_raport;
-                } else if (values === 'nilai_TKA') {
-                    value = row.nilai_tka;
-                }
-                
-                if (value !== null && !isNaN(value)) {
-                    groups[key].push(value);
-                }
+            xValues.forEach((x, i) => {
+                const yPred = slope * x + intercept;
+                ssRes += Math.pow(yValues[i] - yPred, 2);
+                ssTot += Math.pow(yValues[i] - yMean, 2);
             });
             
-            // Hitung agregasi
-            const pivotData = [];
-            for (const [group, values] of Object.entries(groups)) {
-                let result;
-                
-                switch (agg) {
-                    case 'mean':
-                        result = values.reduce((a, b) => a + b, 0) / values.length;
-                        break;
-                    case 'sum':
-                        result = values.reduce((a, b) => a + b, 0);
-                        break;
-                    case 'count':
-                        result = values.length;
-                        break;
-                    case 'min':
-                        result = Math.min(...values);
-                        break;
-                    case 'max':
-                        result = Math.max(...values);
-                        break;
-                }
-                
-                pivotData.push({
-                    group: group,
-                    value: typeof result === 'number' ? result.toFixed(2) : result,
-                    count: values.length
-                });
+            return 1 - (ssRes / ssTot);
+        }
+        
+        // 24. Generate Performance Matrix
+        function generatePerformanceMatrix() {
+            const container = document.getElementById('performanceMatrix');
+            
+            if (!cleanedData || cleanedData.length === 0) {
+                container.innerHTML = '<p class="text-muted">Data belum tersedia</p>';
+                return;
             }
             
-            // Urutkan
-            pivotData.sort((a, b) => b.value - a.value);
+            // Kelompokkan per kelas
+            const classData = {};
+            cleanedData.forEach(student => {
+                const kelas = student.kelas || 'Unknown';
+                if (!classData[kelas]) {
+                    classData[kelas] = {
+                        raportValues: [],
+                        tkaValues: [],
+                        students: []
+                    };
+                }
+                classData[kelas].raportValues.push(student.nilai_raport || 0);
+                classData[kelas].tkaValues.push(student.nilai_tka || 0);
+                classData[kelas].students.push(student);
+            });
             
-            // Tampilkan
-            const table = document.getElementById('pivotTable');
-            table.innerHTML = `
-                <thead>
-                    <tr class="table-primary">
-                        <th>${rows === 'kelas' ? 'Kelas' : 'Siswa'}</th>
-                        <th>${getAggregationLabel(agg)} ${values === 'nilai_raport' ? 'Nilai Raport' : 'Nilai TKA'}</th>
-                        <th>Jumlah Data</th>
+            // Buat matrix
+            let html = '<thead><tr><th>Kelas</th><th>Rata² Raport</th><th>Rata² TKA</th><th>Std Dev Raport</th><th>Std Dev TKA</th><th>% Lulus*</th><th>Rank</th></tr></thead><tbody>';
+            
+            const classStats = [];
+            Object.keys(classData).forEach(kelas => {
+                const data = classData[kelas];
+                const avgRaport = data.raportValues.reduce((a, b) => a + b, 0) / data.raportValues.length;
+                const avgTKA = data.tkaValues.reduce((a, b) => a + b, 0) / data.tkaValues.length;
+                const totalAvg = (avgRaport + avgTKA) / 2;
+                
+                // Hitung std dev
+                const raportStd = Math.sqrt(
+                    data.raportValues.reduce((sum, val) => sum + Math.pow(val - avgRaport, 2), 0) / data.raportValues.length
+                );
+                const tkaStd = Math.sqrt(
+                    data.tkaValues.reduce((sum, val) => sum + Math.pow(val - avgTKA, 2), 0) / data.tkaValues.length
+                );
+                
+                // Hitung persentase lulus (nilai > 70)
+                const passedRaport = data.raportValues.filter(v => v >= 70).length;
+                const passedTKA = data.tkaValues.filter(v => v >= 70).length;
+                const percentPassed = ((passedRaport + passedTKA) / (data.raportValues.length + data.tkaValues.length) * 100).toFixed(1);
+                
+                classStats.push({
+                    kelas,
+                    avgRaport,
+                    avgTKA,
+                    totalAvg,
+                    raportStd: raportStd.toFixed(1),
+                    tkaStd: tkaStd.toFixed(1),
+                    percentPassed
+                });
+            });
+            
+            // Urutkan berdasarkan totalAvg
+            classStats.sort((a, b) => b.totalAvg - a.totalAvg);
+            
+            // Tampilkan dalam tabel
+            classStats.forEach((stat, index) => {
+                const rankBadge = index === 0 ? '<span class="badge bg-warning">1st</span>' : 
+                                index === 1 ? '<span class="badge bg-secondary">2nd</span>' : 
+                                index === 2 ? '<span class="badge bg-danger">3rd</span>' : 
+                                `<span class="badge bg-info">${index + 1}th</span>`;
+                
+                html += `
+                    <tr>
+                        <td><strong>${stat.kelas}</strong></td>
+                        <td>${stat.avgRaport.toFixed(1)}</td>
+                        <td>${stat.avgTKA.toFixed(1)}</td>
+                        <td>${stat.raportStd}</td>
+                        <td>${stat.tkaStd}</td>
+                        <td>${stat.percentPassed}%</td>
+                        <td>${rankBadge}</td>
                     </tr>
-                </thead>
-                <tbody>
-                    ${pivotData.map(item => `
-                        <tr>
-                            <td><strong>${item.group}</strong></td>
-                            <td>${item.value}</td>
-                            <td><span class="badge bg-info">${item.count}</span></td>
-                        </tr>
-                    `).join('')}
-                </tbody>
+                `;
+            });
+            
+            html += '</tbody>';
+            container.innerHTML = html;
+        }
+        
+        // 25. Generate Confusion Matrix
+        function generateConfusionMatrix() {
+            const container = document.getElementById('confusionMatrixContainer');
+            
+            if (!cleanedData || cleanedData.length === 0) {
+                container.innerHTML = '<p class="text-muted">Data belum tersedia</p>';
+                return;
+            }
+            
+            // Klasifikasi sederhana: Baik (>=80), Cukup (60-79), Kurang (<60)
+            let confusionData = {
+                'Raport': { Baik: 0, Cukup: 0, Kurang: 0 },
+                'TKA': { Baik: 0, Cukup: 0, Kurang: 0 }
+            };
+            
+            cleanedData.forEach(student => {
+                const raport = student.nilai_raport || 0;
+                const tka = student.nilai_tka || 0;
+                
+                // Klasifikasi Raport
+                if (raport >= 80) confusionData['Raport'].Baik++;
+                else if (raport >= 60) confusionData['Raport'].Cukup++;
+                else confusionData['Raport'].Kurang++;
+                
+                // Klasifikasi TKA
+                if (tka >= 80) confusionData['TKA'].Baik++;
+                else if (tka >= 60) confusionData['TKA'].Cukup++;
+                else confusionData['TKA'].Kurang++;
+            });
+            
+            // Buat confusion matrix
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-sm matrix-table">
+                        <thead>
+                            <tr>
+                                <th>Kategori</th>
+                                <th>Baik (≥80)</th>
+                                <th>Cukup (60-79)</th>
+                                <th>Kurang (<60)</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Raport</strong></td>
+                                <td><span class="badge bg-success">${confusionData['Raport'].Baik}</span></td>
+                                <td><span class="badge bg-warning">${confusionData['Raport'].Cukup}</span></td>
+                                <td><span class="badge bg-danger">${confusionData['Raport'].Kurang}</span></td>
+                                <td><strong>${cleanedData.length}</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>TKA</strong></td>
+                                <td><span class="badge bg-success">${confusionData['TKA'].Baik}</span></td>
+                                <td><span class="badge bg-warning">${confusionData['TKA'].Cukup}</span></td>
+                                <td><span class="badge bg-danger">${confusionData['TKA'].Kurang}</span></td>
+                                <td><strong>${cleanedData.length}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             `;
+            
+            container.innerHTML = html;
+            
+            // Hitung metrics
+            const total = cleanedData.length;
+            const metrics = {
+                accuracy: ((confusionData['Raport'].Baik + confusionData['TKA'].Baik) / (total * 2) * 100).toFixed(1),
+                precision: (confusionData['Raport'].Baik / total * 100).toFixed(1),
+                recall: (confusionData['TKA'].Baik / total * 100).toFixed(1)
+            };
+            
+            document.getElementById('classificationMetrics').innerHTML = `
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="stat-card">
+                            <div class="stat-value">${metrics.accuracy}%</div>
+                            <div class="stat-label">Accuracy</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card">
+                            <div class="stat-value">${metrics.precision}%</div>
+                            <div class="stat-label">Precision (Raport)</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card">
+                            <div class="stat-value">${metrics.recall}%</div>
+                            <div class="stat-label">Recall (TKA)</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 26. Predict nilai TKA berdasarkan Raport
+        function predictTKA() {
+            const input = document.getElementById('predictValue');
+            const value = parseFloat(input.value);
+            
+            if (isNaN(value) || value < 0 || value > 100) {
+                showToast('error', 'Input tidak valid!', 'Masukkan nilai antara 0-100');
+                return;
+            }
+            
+            if (!window.regressionParams) {
+                showToast('warning', 'Model regresi belum dibuat!', 'Lakukan analisis terlebih dahulu');
+                return;
+            }
+            
+            const { slope, intercept } = window.regressionParams;
+            const predicted = slope * value + intercept;
+            const bounded = Math.max(0, Math.min(100, predicted));
+            
+            const resultDiv = document.getElementById('predictionResult');
+            const resultText = document.getElementById('predictionText');
+            
+            resultText.innerHTML = `
+                <p><strong>Nilai Raport:</strong> ${value.toFixed(1)}</p>
+                <p><strong>Prediksi Nilai TKA:</strong> ${bounded.toFixed(1)}</p>
+                <p><strong>Kategori:</strong> ${getCategory(bounded)}</p>
+                <p class="small mt-2">Berdasarkan model regresi: TKA = ${slope.toFixed(3)} × Raport + ${intercept.toFixed(3)}</p>
+            `;
+            
+            resultDiv.style.display = 'block';
+            
+            showToast('success', 'Prediksi berhasil!', `TKA diprediksi: ${bounded.toFixed(1)}`);
+        }
+        
+        // 27. Helper: Get category based on score
+        function getCategory(score) {
+            if (score >= 85) return '<span class="badge bg-success">Sangat Baik</span>';
+            if (score >= 70) return '<span class="badge bg-primary">Baik</span>';
+            if (score >= 55) return '<span class="badge bg-warning">Cukup</span>';
+            return '<span class="badge bg-danger">Perlu Perbaikan</span>';
         }
         
         // ==================== FUNGSI BANTUAN ====================
@@ -1684,15 +2238,12 @@
             const sorted = [...values].sort((a, b) => a - b);
             const n = sorted.length;
             
-            // Mean
             const mean = sorted.reduce((a, b) => a + b, 0) / n;
             
-            // Median
             const median = n % 2 === 0 ? 
                 (sorted[n/2 - 1] + sorted[n/2]) / 2 : 
                 sorted[Math.floor(n/2)];
             
-            // Mode
             const frequency = {};
             let maxFreq = 0;
             let mode = sorted[0];
@@ -1705,11 +2256,9 @@
                 }
             });
             
-            // Standard deviation
             const variance = sorted.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n;
             const stdDev = Math.sqrt(variance);
             
-            // Quartiles
             const q1 = sorted[Math.floor(n * 0.25)];
             const q3 = sorted[Math.floor(n * 0.75)];
             
@@ -1779,21 +2328,20 @@
         
         // Tampilkan loading
         function showLoading(show) {
-            const loadingEl = document.createElement('div');
-            loadingEl.className = 'loading';
-            loadingEl.innerHTML = '<div class="spinner-border text-primary loading-spinner" role="status"></div>';
-            
             if (show) {
+                const loadingEl = document.createElement('div');
+                loadingEl.className = 'loading';
+                loadingEl.innerHTML = '<div class="spinner-border text-primary loading-spinner" role="status"></div>';
+                loadingEl.id = 'loadingOverlay';
                 document.body.appendChild(loadingEl);
             } else {
-                const existing = document.querySelector('.loading');
+                const existing = document.getElementById('loadingOverlay');
                 if (existing) existing.remove();
             }
         }
         
         // Tampilkan toast notifikasi
         function showToast(type, title, message) {
-            // Buat elemen toast
             const toastEl = document.createElement('div');
             toastEl.className = `toast align-items-center text-bg-${type} border-0`;
             toastEl.setAttribute('role', 'alert');
@@ -1810,7 +2358,6 @@
                 </div>
             `;
             
-            // Tambahkan ke container
             const container = document.getElementById('toastContainer') || (() => {
                 const div = document.createElement('div');
                 div.id = 'toastContainer';
@@ -1821,11 +2368,9 @@
             
             container.appendChild(toastEl);
             
-            // Inisialisasi dan tampilkan
             const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
             toast.show();
             
-            // Hapus setelah selesai
             toastEl.addEventListener('hidden.bs.toast', () => {
                 toastEl.remove();
             });
@@ -1855,7 +2400,6 @@
                 return;
             }
             
-            // Konversi ke CSV
             const headers = ['nama_siswa', 'kelas', 'nilai_raport', 'nilai_tka'];
             const csvRows = [headers.join(',')];
             
@@ -1883,15 +2427,13 @@
         
         // ==================== EVENT LISTENERS ====================
         
-        // Load data saat halaman dimuat
         document.addEventListener('DOMContentLoaded', function() {
-            // Load data otomatis
             setTimeout(() => loadData(), 500);
             
             // Setup auto-refresh
             document.getElementById('autoRefresh').addEventListener('change', function(e) {
                 if (e.target.checked) {
-                    autoRefreshInterval = setInterval(loadData, 30000); // 30 detik
+                    autoRefreshInterval = setInterval(loadData, 30000);
                     showToast('info', 'Auto-refresh diaktifkan', 'Data akan diperbarui setiap 30 detik');
                 } else {
                     clearInterval(autoRefreshInterval);
@@ -1910,9 +2452,19 @@
                     card.classList.toggle('text-light', e.target.checked);
                 });
             });
+            
+            // Toggle heatmap view
+            document.getElementById('toggleHeatmapView').addEventListener('click', function() {
+                isHeatmapView = !isHeatmapView;
+                const heatmapSection = document.getElementById('heatmapSection');
+                heatmapSection.style.display = isHeatmapView ? 'block' : 'none';
+                this.innerHTML = isHeatmapView ? 
+                    '<i class="fas fa-times me-1"></i>Hide Heatmap' : 
+                    '<i class="fas fa-exchange-alt me-1"></i>Show Heatmap';
+            });
         });
         
-        // Event listeners untuk tombol
+        // Event listeners untuk tombol utama
         document.getElementById('loadDataBtn').addEventListener('click', loadData);
         document.getElementById('cleanDataBtn').addEventListener('click', cleanData);
         document.getElementById('analyzeBtn').addEventListener('click', performEDA);
@@ -1929,23 +2481,143 @@
         // Event listeners untuk chart controls
         document.querySelectorAll('[data-chart-type]').forEach(btn => {
             btn.addEventListener('click', function() {
-                // Update active button
                 document.querySelectorAll('[data-chart-type]').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
                 
-                // Update chart
-                createMainChart(this.dataset.chartType);
+                const chartType = this.dataset.chartType;
+                
+                if (chartType === 'heatmap') {
+                    document.getElementById('heatmapSection').style.display = 'block';
+                    document.getElementById('chartTitle').textContent = 'Heatmap Analysis';
+                    createHeatmap();
+                } else {
+                    document.getElementById('heatmapSection').style.display = 'none';
+                    createMainChart(chartType);
+                }
             });
         });
         
         // Event listeners untuk kontrol chart
-        document.getElementById('chartDataSelect').addEventListener('change', () => createMainChart());
-        document.getElementById('chartGroupSelect').addEventListener('change', () => createMainChart());
-        document.getElementById('chartThemeSelect').addEventListener('change', () => createMainChart());
-        document.getElementById('chartInteractivity').addEventListener('change', () => createMainChart());
+        document.getElementById('chartDataSelect').addEventListener('change', () => {
+            if (document.querySelector('[data-chart-type].active').dataset.chartType !== 'heatmap') {
+                createMainChart();
+            }
+        });
+        
+        document.getElementById('chartGroupSelect').addEventListener('change', () => {
+            if (document.querySelector('[data-chart-type].active').dataset.chartType !== 'heatmap') {
+                createMainChart();
+            }
+        });
+        
+        document.getElementById('chartThemeSelect').addEventListener('change', () => {
+            if (document.querySelector('[data-chart-type].active').dataset.chartType !== 'heatmap') {
+                createMainChart();
+            }
+        });
+        
+        document.getElementById('chartInteractivity').addEventListener('change', () => {
+            if (document.querySelector('[data-chart-type].active').dataset.chartType !== 'heatmap') {
+                createMainChart();
+            }
+        });
         
         // Event listener untuk pivot table
-        document.getElementById('generatePivotBtn').addEventListener('click', generatePivotTable);
+        document.getElementById('generatePivotBtn').addEventListener('click', function() {
+            if (!cleanedData || cleanedData.length === 0) {
+                showToast('warning', 'Data belum tersedia!', 'Load dan clean data terlebih dahulu');
+                return;
+            }
+            
+            const rows = document.getElementById('pivotRows').value;
+            const values = document.getElementById('pivotValues').value;
+            const agg = document.getElementById('pivotAgg').value;
+            
+            const groups = {};
+            
+            cleanedData.forEach(row => {
+                const key = row[rows] || 'Unknown';
+                
+                if (!groups[key]) {
+                    groups[key] = [];
+                }
+                
+                let value;
+                if (values === 'nilai_raport') {
+                    value = row.nilai_raport;
+                } else if (values === 'nilai_TKA') {
+                    value = row.nilai_tka;
+                }
+                
+                if (value !== null && !isNaN(value)) {
+                    groups[key].push(value);
+                }
+            });
+            
+            const pivotData = [];
+            for (const [group, values] of Object.entries(groups)) {
+                let result;
+                
+                switch (agg) {
+                    case 'mean':
+                        result = values.reduce((a, b) => a + b, 0) / values.length;
+                        break;
+                    case 'sum':
+                        result = values.reduce((a, b) => a + b, 0);
+                        break;
+                    case 'count':
+                        result = values.length;
+                        break;
+                    case 'min':
+                        result = Math.min(...values);
+                        break;
+                    case 'max':
+                        result = Math.max(...values);
+                        break;
+                }
+                
+                pivotData.push({
+                    group: group,
+                    value: typeof result === 'number' ? result.toFixed(2) : result,
+                    count: values.length
+                });
+            }
+            
+            pivotData.sort((a, b) => b.value - a.value);
+            
+            const table = document.getElementById('pivotTable');
+            table.innerHTML = `
+                <thead>
+                    <tr class="table-primary">
+                        <th>${rows === 'kelas' ? 'Kelas' : 'Siswa'}</th>
+                        <th>${getAggregationLabel(agg)} ${values === 'nilai_raport' ? 'Nilai Raport' : 'Nilai TKA'}</th>
+                        <th>Jumlah Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${pivotData.map(item => `
+                        <tr>
+                            <td><strong>${item.group}</strong></td>
+                            <td>${item.value}</td>
+                            <td><span class="badge bg-info">${item.count}</span></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+        });
+        
+        // Event listener untuk clustering
+        document.getElementById('runClusteringBtn').addEventListener('click', runClustering);
+        
+        // Event listener untuk prediksi
+        document.getElementById('predictBtn').addEventListener('click', predictTKA);
+        
+        // Event listener untuk enter key pada input prediksi
+        document.getElementById('predictValue').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                predictTKA();
+            }
+        });
     </script>
 </body>
 </html>
